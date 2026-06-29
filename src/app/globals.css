@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
+/*
+  CalledIt — "Broadcast Terminal" theme.
+  Stadium-night dark. Volt-green = you / your correct calls. Amber = the market
+  (your opponent). Red = live / wrong. Mono numerals = the "receipts" texture.
+*/
+@theme {
+  --color-bg: #0a0e14;
+  --color-surface: #121a24;
+  --color-surface-2: #1a2330;
+  --color-border: #283341;
+  --color-fg: #eaf1f8;
+  --color-muted: #8a98ab;
+
+  --color-brand: #3ddc84;
+  --color-brand-strong: #22c55e;
+  --color-market: #fbbf24;
+  --color-yes: #3ddc84;
+  --color-no: #f4556b;
+  --color-live: #ff4d4d;
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1100px 560px at 50% -12%, rgba(61, 220, 132, 0.07), transparent 62%),
+    radial-gradient(900px 500px at 90% 8%, rgba(251, 191, 36, 0.05), transparent 60%),
+    var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+/* tabular numerals for every score / odds / timer / points value */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ---- motion ---- */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-live { animation: live-pulse 1.2s ease-in-out infinite; }
+
+@keyframes pop-in {
+  0% { transform: scale(0.92); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes points-fly {
+  0% { transform: translateY(8px) scale(0.9); opacity: 0; }
+  30% { transform: translateY(0) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-26px) scale(1); opacity: 0; }
+}
+.animate-points { animation: points-fly 1.4s ease-out forwards; }
+
+@keyframes rise-in {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-rise { animation: rise-in 0.4s ease-out both; }
+
+@keyframes sheen {
+  0% { background-position: -120% 0; }
+  100% { background-position: 220% 0; }
+}
+
+.glow-brand { box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.35), 0 0 28px -6px rgba(61, 220, 132, 0.5); }
+.glow-no { box-shadow: 0 0 0 1px rgba(244, 85, 107, 0.35), 0 0 28px -6px rgba(244, 85, 107, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

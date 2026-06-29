@@ -27,6 +27,8 @@ export interface Prop {
   superOddsType: string;
   /** Market implied probability of YES (0..1), from TxLINE Pct[]. */
   yesPct: number;
+  /** ms timestamp the call window opened. */
+  openedAt: number;
   /** ms timestamp the call window closes. */
   windowEndsAt: number;
   status: PropStatus;
@@ -70,6 +72,8 @@ export interface LeaderboardRow extends Player {
 export interface GameState {
   match: MatchInfo;
   minute: number;
+  homeScore: number;
+  awayScore: number;
   status: "pregame" | "live" | "fulltime";
   /** Most recently offered prop (the live call), if any. */
   activeProp?: Prop;
