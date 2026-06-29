@@ -51,7 +51,13 @@ Integration code:
 | Program (`calledit`) | [`BeR8b7y7c4offbz2fqNj2N1Y5zoEqkY9aYgBVc7NSdM1`](https://explorer.solana.com/address/BeR8b7y7c4offbz2fqNj2N1Y5zoEqkY9aYgBVc7NSdM1?cluster=devnet) |
 | Example `record_call` receipt | [`3bd17fga…RKt2v`](https://explorer.solana.com/tx/3bd17fga1BuBRyz8Q8uXqG611kf2bpAiGjWnKjvUBBVBaFJeNhuSLYz7dhCguDA7nHa2XmcKm9fH5UJLhnLRKt2v?cluster=devnet) |
 | Instructions | `record_call` (permissionless receipt), `settle_call` (authority-gated, points on-chain), `initialize_config` (upgrade-authority-gated) |
+| Config PDA | `ERqWzBnwMsj9tK9fA4DTebya9hBtc3DLBogybTL7gFjm` |
 | Design review | [`.solana-roast/`](./.solana-roast/) — Code Safety 9/10 · Launch Readiness 6/10 |
+
+**All three instructions verified on devnet:**
+- `record_call` → receipt created ([`3bd17fga…RKt2v`](https://explorer.solana.com/tx/3bd17fga1BuBRyz8Q8uXqG611kf2bpAiGjWnKjvUBBVBaFJeNhuSLYz7dhCguDA7nHa2XmcKm9fH5UJLhnLRKt2v?cluster=devnet))
+- `initialize_config` → upgrade-authority gate passed ([`3Kzbtgzq…W1bK`](https://explorer.solana.com/tx/3Kzbtgzq8f1EDuaSSUmYMvsUyWYw7XWyz4nChph7zB7NpqCombTL1rew9rnVTNhQ9A2RG7XLEFek8JRDaghhW1bK?cluster=devnet))
+- `settle_call` → **points = 370 computed on-chain** for a YES @ 27% (1,000,000 ÷ 2700) ([`5siJd29e…hXKUE`](https://explorer.solana.com/tx/5siJd29enQjKCm4DxFe4T3us5YjAMYnZXASy6LApwrk5m2ysUZE16fL58h75YiabdRsL2YU6zCR9e54gX96hXKUE?cluster=devnet))
 
 ## How it meets the hard constraints
 
