@@ -182,7 +182,8 @@ export const SCRIPT: MatchScript = {
       resolveLabel: "⚽ Brazil win it — Vinícius, 90'! ARG 1-2 BRA",
       scoreAfter: { home: 1, away: 2 },
       botCalls: [
-        { botId: "max", side: "NO", at: 148 },
+        // even the sharp gets the ending wrong — so a good player can take #1
+        { botId: "max", side: "YES", at: 148 },
         { botId: "priya", side: "YES", at: 151 },
         { botId: "deano", side: "YES", at: 153 },
         { botId: "sam", side: "YES", at: 157 },
