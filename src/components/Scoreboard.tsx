@@ -41,9 +41,7 @@ function Team({ t, align = "left" }: { t: TeamInfo; align?: "left" | "right" }) 
     >
       <span className="text-3xl leading-none">{t.flag}</span>
       <div>
-        <div className="font-display text-lg font-bold leading-none" style={{ color: t.color }}>
-          {t.short}
-        </div>
+        <div className="font-display text-lg font-bold leading-none text-fg">{t.short}</div>
         <div className="mt-1 text-xs text-muted">{t.name}</div>
       </div>
     </div>

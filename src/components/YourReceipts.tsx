@@ -36,7 +36,7 @@ export function YourReceipts({
               >
                 <span
                   className={`grid h-6 w-6 shrink-0 place-items-center rounded-md text-[11px] font-bold ${
-                    yes ? "bg-brand/15 text-brand" : "bg-no/15 text-no"
+                    yes ? "bg-yes/15 text-yes" : "bg-no/15 text-no"
                   }`}
                 >
                   {c.side}
@@ -46,7 +46,7 @@ export function YourReceipts({
                   <p className="text-[11px] text-muted">
                     {settled ? (
                       c.correct ? (
-                        <span className="text-brand">Called it · +{c.points} pts</span>
+                        <span className="text-yes">Called it · +{c.points} pts</span>
                       ) : (
                         <span className="text-muted">Missed</span>
                       )

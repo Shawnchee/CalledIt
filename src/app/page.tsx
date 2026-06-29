@@ -27,7 +27,7 @@ export default function Landing() {
             <span className="h-1.5 w-1.5 rounded-full bg-live animate-live" /> World Cup 2026 · Track B
           </span>
           <h1 className="mt-5 font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-            Call it before the <span className="text-gradient">market</span> does.
+            Call it before the <span className="text-market">market</span> does.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted">
             A live play-along for every match: call what happens next{" "}
@@ -120,7 +120,7 @@ function PreviewCard() {
           <span className="rounded-full border border-border bg-bg/60 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-market">
             NEXT GOAL · 24&apos;
           </span>
-          <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-brand font-mono tnum text-lg font-semibold text-brand">
+          <span className="grid h-12 w-12 place-items-center rounded-full border-2 border-yes font-mono tnum text-lg font-semibold text-yes">
             9
           </span>
         </div>
@@ -133,12 +133,12 @@ function PreviewCard() {
             <span>NO 73%</span>
           </div>
           <div className="flex h-2 overflow-hidden rounded-full bg-bg">
-            <div className="bg-brand/70" style={{ width: "27%" }} />
+            <div className="bg-yes/70" style={{ width: "27%" }} />
             <div className="bg-no/60" style={{ width: "73%" }} />
           </div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="flex min-h-[84px] flex-col items-center justify-center rounded-2xl border border-brand/40 bg-brand/10 font-display font-bold text-brand glow-brand">
+          <div className="flex min-h-[84px] flex-col items-center justify-center rounded-2xl border border-yes/40 bg-yes/10 font-display font-bold text-yes">
             <span className="text-2xl">YES</span>
             <span className="font-mono tnum text-xs opacity-90">+370 pts · 3.7×</span>
           </div>

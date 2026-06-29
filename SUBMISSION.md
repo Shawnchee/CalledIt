@@ -26,7 +26,8 @@ impossible without TxLINE, and the on-chain receipt is the literal mechanism tha
 - **Live crew leaderboard + moments ticker** that move with the pitch; a simulated crew (incl. a
   hindsight-merchant bot) makes a room of one lively and fixes the "fake friends in a recording" demo problem.
 - **Solana wallet sign-up**; **/solana-roast**'d program (front-running on init fixed) deployed to devnet.
-- **"Broadcast Terminal" UI** — premium dark, live-sports energy + crypto receipts credibility.
+- **"Broadsheet" UI** — bright editorial: paper, ink, hairline cards, a confident cobalt brand;
+  green/red reserved for the YES/NO calls, amber for the market. Flat, no glow.
 
 ## TxLINE endpoints used
 

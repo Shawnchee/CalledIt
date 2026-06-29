@@ -17,7 +17,7 @@ export function CountdownRing({
   const offset = circ * (1 - clamped);
   const color =
     clamped > 0.5
-      ? "var(--color-brand)"
+      ? "var(--color-yes)"
       : clamped > 0.25
         ? "var(--color-market)"
         : "var(--color-no)";

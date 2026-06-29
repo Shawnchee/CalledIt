@@ -1,25 +1,24 @@
 @import "tailwindcss";
 
 /*
-  CalledIt — "Broadcast Terminal" theme.
-  Stadium-night dark. Volt-green = you / your correct calls. Amber = the market
-  (your opponent). Red = live / wrong. Mono numerals = the "receipts" texture.
+  CalledIt — "Broadsheet" theme.
+  Bright editorial: off-white paper, ink text, hairline borders, no glow.
+  Cobalt = brand/CTA. Green/red = YES/NO calls only. Amber = the market.
 */
 @theme {
-  --color-bg: #070b09;
-  --color-surface: #0e1512;
-  --color-surface-2: #16201b;
-  --color-border: #243029;
-  --color-fg: #eaf2ee;
-  --color-muted: #8a9b92;
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8f9fb;
+  --color-border: #e3e6eb;
+  --color-fg: #0e1116;
+  --color-muted: #5b6573;
 
-  --color-brand: #3ddc84;
-  --color-brand-strong: #22c55e;
-  --color-mint: #2ee6a6;
-  --color-market: #fbbf24;
-  --color-yes: #3ddc84;
-  --color-no: #f4556b;
-  --color-live: #ff4d4d;
+  --color-brand: #1b53f0;
+  --color-brand-strong: #1741c4;
+  --color-market: #b26a00;
+  --color-yes: #12925a;
+  --color-no: #e23a2e;
+  --color-live: #e23a2e;
 
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -27,7 +26,7 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -35,41 +34,6 @@ body {
   color: var(--color-fg);
   font-family: var(--font-sans);
   min-height: 100dvh;
-}
-
-/* ZeBeyond-style backdrop: faint engineering grid that fades at the edges */
-.bg-grid {
-  background-image:
-    linear-gradient(to right, rgba(155, 230, 200, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(155, 230, 200, 0.05) 1px, transparent 1px);
-  background-size: 62px 62px;
-  -webkit-mask-image: radial-gradient(ellipse 90% 75% at 50% 28%, #000 25%, transparent 78%);
-  mask-image: radial-gradient(ellipse 90% 75% at 50% 28%, #000 25%, transparent 78%);
-}
-
-@keyframes glow-drift {
-  0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.85; }
-  50% { transform: translate(-50%, 3%) scale(1.06); opacity: 1; }
-}
-.animate-glow { animation: glow-drift 9s ease-in-out infinite; }
-
-/* glossy device bezel for framing product UI */
-.device-frame {
-  border-radius: 1.9rem;
-  padding: 10px;
-  border: 1px solid var(--color-border);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
-  box-shadow:
-    0 40px 90px -36px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 70px -22px rgba(61, 220, 132, 0.28);
-}
-
-.text-gradient {
-  background: linear-gradient(100deg, var(--color-brand), var(--color-mint));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 
 /* tabular numerals for every score / odds / timer / points value */
@@ -82,7 +46,25 @@ body {
   font-family: var(--font-display);
 }
 
-/* ---- motion ---- */
+/* clean elevation — a soft neutral shadow, never a neon glow */
+.elev {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -16px rgba(16, 24, 40, 0.25);
+}
+.glow-brand,
+.glow-no {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 10px 26px -18px rgba(16, 24, 40, 0.3);
+}
+
+/* glossy-light device bezel for framing the product preview */
+.device-frame {
+  border-radius: 1.9rem;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  background: linear-gradient(165deg, #ffffff, #eef0f4);
+  box-shadow: 0 30px 70px -40px rgba(16, 24, 40, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ---- motion (transform/opacity only) ---- */
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
@@ -90,11 +72,11 @@ body {
 .animate-live { animation: live-pulse 1.2s ease-in-out infinite; }
 
 @keyframes pop-in {
-  0% { transform: scale(0.92); opacity: 0; }
-  60% { transform: scale(1.03); opacity: 1; }
+  0% { transform: scale(0.94); opacity: 0; }
+  60% { transform: scale(1.02); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-.animate-pop { animation: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.animate-pop { animation: pop-in 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
 
 @keyframes points-fly {
   0% { transform: translateY(8px) scale(0.9); opacity: 0; }
@@ -108,14 +90,6 @@ body {
   100% { transform: translateY(0); opacity: 1; }
 }
 .animate-rise { animation: rise-in 0.4s ease-out both; }
-
-@keyframes sheen {
-  0% { background-position: -120% 0; }
-  100% { background-position: 220% 0; }
-}
-
-.glow-brand { box-shadow: 0 0 0 1px rgba(61, 220, 132, 0.35), 0 0 28px -6px rgba(61, 220, 132, 0.5); }
-.glow-no { box-shadow: 0 0 0 1px rgba(244, 85, 107, 0.35), 0 0 28px -6px rgba(244, 85, 107, 0.45); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

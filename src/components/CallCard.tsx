@@ -73,7 +73,7 @@ export function CallCard({
           <span>NO {noPctLabel}</span>
         </div>
         <div className="flex h-2 overflow-hidden rounded-full bg-bg">
-          <div className="bg-brand/70" style={{ width: `${prop.yesPct * 100}%` }} />
+          <div className="bg-yes/70" style={{ width: `${prop.yesPct * 100}%` }} />
           <div className="bg-no/60" style={{ width: `${(1 - prop.yesPct) * 100}%` }} />
         </div>
       </div>
@@ -133,8 +133,8 @@ function CallButton({
       disabled={disabled}
       className={`group flex min-h-[84px] flex-col items-center justify-center gap-1 rounded-2xl border px-4 py-4 font-display font-bold transition active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100 cursor-pointer ${
         yes
-          ? "border-brand/40 bg-brand/10 text-brand hover:bg-brand/20 hover:glow-brand"
-          : "border-no/40 bg-no/10 text-no hover:bg-no/20 hover:glow-no"
+          ? "border-yes/40 bg-yes/10 text-yes hover:bg-yes/20"
+          : "border-no/40 bg-no/10 text-no hover:bg-no/20"
       }`}
     >
       <span className="text-2xl tracking-wide">{side}</span>

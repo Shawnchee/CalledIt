@@ -165,9 +165,9 @@ function Pregame({
       <div className="w-full rounded-3xl border border-border bg-surface/60 p-8 text-center">
         <p className="text-xs uppercase tracking-[0.2em] text-muted">{match.competition}</p>
         <div className="mt-5 flex items-center justify-center gap-5">
-          <Side flag={match.home.flag} short={match.home.short} color={match.home.color} />
+          <Side flag={match.home.flag} short={match.home.short} />
           <span className="font-display text-2xl text-muted">vs</span>
-          <Side flag={match.away.flag} short={match.away.short} color={match.away.color} />
+          <Side flag={match.away.flag} short={match.away.short} />
         </div>
         <p className="mt-6 text-sm text-muted">
           Replaying a live TxLINE feed. Make your calls against the market before each window
@@ -200,13 +200,11 @@ function Pregame({
   );
 }
 
-function Side({ flag, short, color }: { flag: string; short: string; color: string }) {
+function Side({ flag, short }: { flag: string; short: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-5xl">{flag}</span>
-      <span className="font-display text-lg font-bold" style={{ color }}>
-        {short}
-      </span>
+      <span className="font-display text-lg font-bold text-fg">{short}</span>
     </div>
   );
 }
