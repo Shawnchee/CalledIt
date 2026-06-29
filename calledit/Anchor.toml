@@ -1,0 +1,21 @@
+[toolchain]
+package_manager = "npm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+calledit = "BeR8b7y7c4offbz2fqNj2N1Y5zoEqkY9aYgBVc7NSdM1"
+
+[programs.devnet]
+calledit = "BeR8b7y7c4offbz2fqNj2N1Y5zoEqkY9aYgBVc7NSdM1"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]

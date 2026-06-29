@@ -1,0 +1,370 @@
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/calledit.json`.
+ */
+export type Calledit = {
+  "address": "BeR8b7y7c4offbz2fqNj2N1Y5zoEqkY9aYgBVc7NSdM1",
+  "metadata": {
+    "name": "calledit",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "initializeConfig",
+      "docs": [
+        "One-time: create the singleton Config and set the settlement authority",
+        "(run by the deployer right after deploy)."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "recordCall",
+      "docs": [
+        "Record a call against the live market — the anti-hindsight receipt."
+      ],
+      "discriminator": [
+        65,
+        249,
+        82,
+        85,
+        183,
+        158,
+        9,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "call",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  108,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              },
+              {
+                "kind": "arg",
+                "path": "matchId"
+              },
+              {
+                "kind": "arg",
+                "path": "propId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "matchId",
+          "type": "u64"
+        },
+        {
+          "name": "propId",
+          "type": "u64"
+        },
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "marketPct",
+          "type": "u16"
+        },
+        {
+          "name": "windowEnd",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "settleCall",
+      "docs": [
+        "Resolve a call (authority only); points are computed on-chain."
+      ],
+      "discriminator": [
+        58,
+        230,
+        6,
+        58,
+        104,
+        245,
+        154,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "call",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Must equal config.authority (enforced by has_one above)."
+          ],
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "correct",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "callReceipt",
+      "discriminator": [
+        195,
+        95,
+        86,
+        75,
+        103,
+        70,
+        156,
+        193
+      ]
+    },
+    {
+      "name": "config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "invalidSide",
+      "msg": "Side must be 0 (NO) or 1 (YES)"
+    },
+    {
+      "code": 6001,
+      "name": "invalidMarketPct",
+      "msg": "Market percentage must be between 1 and 9999 bps"
+    },
+    {
+      "code": 6002,
+      "name": "windowClosed",
+      "msg": "Call window has already closed; too late to call"
+    },
+    {
+      "code": 6003,
+      "name": "alreadySettled",
+      "msg": "Call has already been settled"
+    },
+    {
+      "code": 6004,
+      "name": "unauthorized",
+      "msg": "Only the settlement authority can settle calls"
+    }
+  ],
+  "types": [
+    {
+      "name": "callReceipt",
+      "docs": [
+        "One per (player, match, prop). This is the anti-hindsight proof: it is",
+        "created BEFORE the call window closes and stamped with the on-chain block",
+        "time, so \"I called it\" becomes provable instead of a group-chat boast."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "docs": [
+              "Wallet that made the call."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "matchId",
+            "docs": [
+              "TxLINE fixture id."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "propId",
+            "docs": [
+              "Prop id within the match (the specific call, e.g. \"ARG to score next 10m\")."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "side",
+            "docs": [
+              "0 = NO, 1 = YES (see constants)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "marketPct",
+            "docs": [
+              "Market's implied probability of the YES outcome, in basis points (1..=9999)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "createdAt",
+            "docs": [
+              "Block time the call was recorded — the proof you called it *before* it happened."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "windowEnd",
+            "docs": [
+              "Deadline the call had to beat (window close). created_at < window_end is enforced."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "settled",
+            "type": "bool"
+          },
+          {
+            "name": "outcome",
+            "docs": [
+              "0 = unsettled, 1 = correct, 2 = incorrect (see constants)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "points",
+            "docs": [
+              "Market-weighted points, computed deterministically on settlement."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "config",
+      "docs": [
+        "Singleton config. Stores the settlement (oracle) authority that is allowed",
+        "to resolve calls. Created once, right after deploy, by the deployer."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "scoringPointsBase",
+      "docs": [
+        "Exposed to the IDL so the frontend can reuse the value."
+      ],
+      "type": "u64",
+      "value": "1000000"
+    }
+  ]
+};
