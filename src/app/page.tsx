@@ -27,7 +27,7 @@ export default function Landing() {
             <span className="h-1.5 w-1.5 rounded-full bg-live animate-live" /> World Cup 2026 · Track B
           </span>
           <h1 className="mt-5 font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-            Call it before the <span className="text-brand">market</span> does.
+            Call it before the <span className="text-gradient">market</span> does.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted">
             A live play-along for every match: call what happens next{" "}
@@ -113,8 +113,9 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
 function PreviewCard() {
   return (
     <div className="relative">
-      <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-brand/5 blur-2xl" />
-      <div className="rounded-3xl border border-border bg-surface/70 p-6 backdrop-blur">
+      <div className="absolute -inset-6 -z-10 rounded-[2.4rem] bg-brand/10 blur-3xl" />
+      <div className="device-frame">
+        <div className="rounded-[1.4rem] border border-border bg-surface/85 p-6 backdrop-blur">
         <div className="mb-4 flex items-center justify-between">
           <span className="rounded-full border border-border bg-bg/60 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-market">
             NEXT GOAL · 24&apos;
@@ -149,6 +150,7 @@ function PreviewCard() {
         <p className="mt-4 text-center text-xs text-muted">
           Call the longshot the market doubts → bank the big points.
         </p>
+        </div>
       </div>
     </div>
   );

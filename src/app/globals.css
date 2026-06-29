@@ -6,15 +6,16 @@
   (your opponent). Red = live / wrong. Mono numerals = the "receipts" texture.
 */
 @theme {
-  --color-bg: #0a0e14;
-  --color-surface: #121a24;
-  --color-surface-2: #1a2330;
-  --color-border: #283341;
-  --color-fg: #eaf1f8;
-  --color-muted: #8a98ab;
+  --color-bg: #070b09;
+  --color-surface: #0e1512;
+  --color-surface-2: #16201b;
+  --color-border: #243029;
+  --color-fg: #eaf2ee;
+  --color-muted: #8a9b92;
 
   --color-brand: #3ddc84;
   --color-brand-strong: #22c55e;
+  --color-mint: #2ee6a6;
   --color-market: #fbbf24;
   --color-yes: #3ddc84;
   --color-no: #f4556b;
@@ -30,13 +31,45 @@
 }
 
 body {
-  background:
-    radial-gradient(1100px 560px at 50% -12%, rgba(61, 220, 132, 0.07), transparent 62%),
-    radial-gradient(900px 500px at 90% 8%, rgba(251, 191, 36, 0.05), transparent 60%),
-    var(--color-bg);
+  background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
   min-height: 100dvh;
+}
+
+/* ZeBeyond-style backdrop: faint engineering grid that fades at the edges */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(155, 230, 200, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(155, 230, 200, 0.05) 1px, transparent 1px);
+  background-size: 62px 62px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 75% at 50% 28%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse 90% 75% at 50% 28%, #000 25%, transparent 78%);
+}
+
+@keyframes glow-drift {
+  0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.85; }
+  50% { transform: translate(-50%, 3%) scale(1.06); opacity: 1; }
+}
+.animate-glow { animation: glow-drift 9s ease-in-out infinite; }
+
+/* glossy device bezel for framing product UI */
+.device-frame {
+  border-radius: 1.9rem;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
+  box-shadow:
+    0 40px 90px -36px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 70px -22px rgba(61, 220, 132, 0.28);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--color-brand), var(--color-mint));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* tabular numerals for every score / odds / timer / points value */
