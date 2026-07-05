@@ -797,10 +797,16 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "litesvm",
+ "sha2 0.10.9",
+ "solana-clock",
+ "solana-instruction",
+ "solana-instruction-error",
  "solana-keypair",
  "solana-message",
+ "solana-pubkey 4.2.0",
  "solana-signer",
  "solana-transaction",
+ "solana-transaction-error",
 ]
 
 [[package]]
