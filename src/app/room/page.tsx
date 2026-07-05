@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { useGame } from "@/lib/game/use-game";
 import { recordCall } from "@/lib/solana/calledit-client";
+import { explorerTx } from "@/lib/solana/config";
 import type { GameState, MatchInfo, Side } from "@/lib/game/types";
 import { Scoreboard } from "@/components/Scoreboard";
 import { CallCard } from "@/components/CallCard";
@@ -16,6 +18,15 @@ import { Brand } from "@/components/Brand";
 import { Toasts, type Toast } from "@/components/Toasts";
 
 export default function RoomPage() {
+  // Suspense boundary required by Next 16 for useSearchParams (reads the ?crew= param)
+  return (
+    <Suspense fallback={null}>
+      <RoomView />
+    </Suspense>
+  );
+}
+
+function RoomView() {
   const { engine, state } = useGame();
   const { connected, publicKey } = useWallet();
   const anchorWallet = useAnchorWallet();
@@ -25,6 +36,9 @@ export default function RoomPage() {
   // but propId is salted so replaying with the same wallet mints fresh CallReceipt PDAs instead of
   // colliding on ["call", player, matchId, propId]. ~1.78e11, safely < 2^53; prop.id stays the low digits.
   const [sessionBase] = useState(() => Math.floor(Date.now() / 1000) * 100);
+  // FIX-11: crew name from ?crew= — makes the "link dropped in the group chat" story tangible (cosmetic)
+  const searchParams = useSearchParams();
+  const crew = searchParams.get("crew") || "Demo crew";
 
   const pushToast = useCallback((t: Toast) => {
     setToasts((cur) => [t, ...cur.filter((x) => x.id !== t.id)].slice(0, 4));
@@ -74,7 +88,11 @@ export default function RoomPage() {
       const prop = state.activeProp;
       if (!prop) return;
       const call = engine.placeCall(prop.id, side);
-      if (!call) return;
+      if (!call) {
+        // FIX-12.4: window locked between render and tap — surface it instead of a dead button
+        pushToast({ id: `late-${prop.id}`, kind: "failed", title: "Too late — window closed", body: prop.label });
+        return;
+      }
       if (!anchorWallet) {
         pushToast({
           id: `nc-${call.id}`,
@@ -122,6 +140,9 @@ export default function RoomPage() {
           <Link href="/" className="cursor-pointer">
             <Brand />
           </Link>
+          <span className="hidden font-mono text-xs text-muted sm:block">
+            Crew: <span className="font-semibold text-fg">{crew}</span>
+          </span>
           <WalletButton />
         </div>
       </header>
@@ -139,7 +160,7 @@ export default function RoomPage() {
                 canCall={connected}
                 onCall={handleCall}
               />
-              {state.status === "fulltime" && <FullTime state={state} />}
+              {state.status === "fulltime" && <FullTime state={state} crew={crew} />}
               <YourReceipts calls={state.calls} props={state.props} />
             </div>
             <div className="space-y-5">
@@ -213,10 +234,46 @@ function Side({ flag, short }: { flag: string; short: string }) {
   );
 }
 
-function FullTime({ state }: { state: GameState }) {
+function FullTime({ state, crew }: { state: GameState; crew: string }) {
+  const [copied, setCopied] = useState(false);
   const you = state.leaderboard.find((r) => r.isYou);
   const top = state.leaderboard[0];
   const won = you && top && you.id === top.id;
+
+  const matchLabel = `${state.match.home.short} ${state.homeScore}–${state.awayScore} ${state.match.away.short}`;
+  // best call = highest-points settled-correct call that has an on-chain receipt
+  const best = state.calls
+    .filter((c) => c.playerId === "you" && c.correct && c.points != null && c.receiptSig)
+    .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
+  const bestProp = best ? state.props.find((p) => p.id === best.propId) : undefined;
+
+  const shareReceipts = async () => {
+    const host = typeof window !== "undefined" ? window.location.host : "calledit";
+    const marketPct = best
+      ? Math.round((best.side === "YES" ? best.marketYesPct : 1 - best.marketYesPct) * 100)
+      : 0;
+    const lines = [
+      `CalledIt — ${matchLabel} FT`,
+      `🏆 #${you?.rank ?? "—"} · ${you?.points.toLocaleString()} pts · ${you?.correctCalls}/${you?.totalCalls} called right`,
+      best && bestProp
+        ? `Best call: ${bestProp.resolveLabel ?? bestProp.label} — market said ${marketPct}%, I called it. Receipt: ${explorerTx(best.receiptSig!)}`
+        : null,
+      host,
+    ].filter(Boolean);
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard blocked (insecure context) — no-op; the button just won't confirm
+    }
+  };
+
+  const runItBack = () => {
+    const q = crew && crew !== "Demo crew" ? `?crew=${encodeURIComponent(crew)}` : "";
+    window.location.href = `/room${q}`;
+  };
+
   return (
     <div className="animate-pop rounded-3xl border border-brand/40 bg-surface/70 p-6 text-center">
       <p className="text-xs uppercase tracking-[0.2em] text-muted">Full time</p>
@@ -229,6 +286,20 @@ function FullTime({ state }: { state: GameState }) {
       <p className="mt-3 text-sm text-muted">
         The receipts are on-chain — no take-backs, no hindsight. Settle the group chat.
       </p>
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <button
+          onClick={shareReceipts}
+          className="rounded-full bg-brand px-5 py-2.5 font-display font-semibold text-bg transition hover:brightness-110 cursor-pointer glow-brand"
+        >
+          {copied ? "Copied ✓" : "Share the receipts"}
+        </button>
+        <button
+          onClick={runItBack}
+          className="rounded-full border border-border bg-surface-2 px-5 py-2.5 font-display font-semibold text-fg transition hover:border-brand/50 cursor-pointer"
+        >
+          Run it back ↻
+        </button>
+      </div>
     </div>
   );
 }

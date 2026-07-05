@@ -46,10 +46,6 @@ body {
   font-family: var(--font-display);
 }
 
-/* clean elevation — a soft neutral shadow, never a neon glow */
-.elev {
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -16px rgba(16, 24, 40, 0.25);
-}
 .glow-brand,
 .glow-no {
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 10px 26px -18px rgba(16, 24, 40, 0.3);
@@ -77,13 +73,6 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 .animate-pop { animation: pop-in 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
-
-@keyframes points-fly {
-  0% { transform: translateY(8px) scale(0.9); opacity: 0; }
-  30% { transform: translateY(0) scale(1.1); opacity: 1; }
-  100% { transform: translateY(-26px) scale(1); opacity: 0; }
-}
-.animate-points { animation: points-fly 1.4s ease-out forwards; }
 
 @keyframes rise-in {
   0% { transform: translateY(10px); opacity: 0; }
