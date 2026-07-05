@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CalledIt OG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  /*
+    CalledIt OG card — "Broadsheet" theme.
+    Colors + type pulled from src/app/globals.css and src/components/Brand.tsx
+    so this never drifts from the live app's look.
+  */
+  :root {
+    --color-bg: #f3f4f6;
+    --color-surface: #ffffff;
+    --color-border: #e3e6eb;
+    --color-fg: #0e1116;
+    --color-muted: #5b6573;
+    --color-brand: #1b53f0;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    background: var(--color-bg);
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    color: var(--color-fg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* faint editorial grid on the paper — never a glow */
+  .grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(var(--color-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.35;
+  }
+
+  .frame {
+    position: absolute;
+    inset: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+  }
+
+  .content {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 76px 84px 52px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand .mark {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--color-brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+
+  .brand .wordmark {
+    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+  }
+
+  .brand .wordmark span {
+    color: var(--color-brand);
+  }
+
+  .headline {
+    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 68px;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    color: var(--color-fg);
+    max-width: 920px;
+    margin: 0;
+  }
+
+  .sub {
+    margin: 22px 0 0;
+    font-size: 30px;
+    line-height: 1.35;
+    color: var(--color-muted);
+    max-width: 780px;
+    font-weight: 500;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--color-border);
+    padding-top: 22px;
+  }
+
+  .footer .tag {
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    font-weight: 600;
+  }
+
+  .footer .tag strong {
+    color: var(--color-fg);
+  }
+
+  .footer .pill {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-brand);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: 999px;
+    padding: 8px 16px;
+  }
+</style>
+</head>
+<body>
+  <div class="grid-overlay"></div>
+  <div class="frame"></div>
+  <div class="content">
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+      <span class="wordmark">Called<span>It</span></span>
+    </div>
+
+    <div>
+      <h1 class="headline">Call it before the market&nbsp;does.</h1>
+      <p class="sub">Prove it on-chain. Settle the group chat.</p>
+    </div>
+
+    <div class="footer">
+      <span class="tag">TxLINE <strong>×</strong> Solana · World Cup 2026</span>
+      <span class="pill">devnet · on-chain receipts</span>
+    </div>
+  </div>
+</body>
+</html>

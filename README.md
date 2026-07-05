@@ -82,6 +82,7 @@ must carry the experience.
 - **`calledit` Anchor program (devnet)** — `record_call` creates a `CallReceipt` PDA
   `{player, match, prop, side, market_pct, created_at}`; authority-gated `settle_call` marks the
   outcome + points. The pre-event receipt is the anti-hindsight proof; the "called it" flex links to it.
+- The threat model's named invariants INV-1…7 are executable tests (`cargo test`), not just claims.
 
 ## Monetization path
 
@@ -112,8 +113,8 @@ Anchor program on devnet · TxLINE SSE feeds.
 
 - [x] Concept locked (CalledIt — market-as-opponent + on-chain receipts)
 - [x] GitHub connected · Solana toolchain ready (devnet, funded)
-- [ ] TxLINE feed adapter (live + replay) + scoring engine
-- [ ] `calledit` Anchor program → /solana-roast → devnet deploy
-- [ ] Wallet auth + on-chain receipt wiring
-- [ ] UI (landing → match room → calls → leaderboard) via /ui-ux-pro-max
+- [x] TxLINE feed adapter (live + replay) + scoring engine
+- [x] `calledit` Anchor program → /solana-roast → devnet deploy
+- [x] Wallet auth + on-chain receipt wiring
+- [x] UI (landing → match room → calls → leaderboard) via /ui-ux-pro-max
 - [ ] Deploy + demo video + submission
