@@ -11,6 +11,13 @@ import { BOTS, SCRIPT, type MatchScript, type ScriptRound } from "./replay-match
 
 export const YOU_ID = "you";
 
+/**
+ * Replay is the default demo path (deterministic scripted timeline + bots).
+ * Live drives the same engine from the real TxLINE feed (props from odds,
+ * settlement from scores) — no bots, no script.
+ */
+export type GameMode = "replay" | "live";
+
 type Listener = (s: GameState) => void;
 
 let callSeq = 0;
@@ -24,6 +31,7 @@ let tickerSeq = 0;
  * Deterministic and framework-agnostic — no React, no globals beyond ids.
  */
 export class GameEngine {
+  private mode: GameMode;
   private script: MatchScript;
   private state: GameState;
   private listeners = new Set<Listener>();
@@ -47,7 +55,13 @@ export class GameEngine {
     this.youSettledHandler = fn;
   }
 
-  constructor(script: MatchScript = SCRIPT, youName = "You", youAvatar = "🫵") {
+  constructor(
+    mode: GameMode = "replay",
+    script: MatchScript = SCRIPT,
+    youName = "You",
+    youAvatar = "🫵",
+  ) {
+    this.mode = mode;
     this.script = script;
     const you: Player = mkPlayer(YOU_ID, youName, youAvatar, true, false);
     const bots = script.bots.map((b) => mkPlayer(b.id, b.name, b.avatar, false, true));
@@ -88,6 +102,18 @@ export class GameEngine {
 
   start() {
     if (this.timer) return;
+    if (this.mode === "live") {
+      // Live mode has no scripted ticker and no bots — props arrive from the
+      // TxLINE odds feed and settle from the scores feed (see LiveGameController).
+      if (this.state.status === "live") return;
+      this.startedAt = Date.now();
+      this.state.status = "live";
+      this.pushTicker(
+        `Live via TxLINE — ${this.state.match.home.name} v ${this.state.match.away.name}`,
+      );
+      this.commit();
+      return;
+    }
     this.startedAt = Date.now();
     this.state.status = "live";
     this.pushTicker(`Kick-off — ${this.state.match.home.name} v ${this.state.match.away.name}`);
@@ -118,6 +144,98 @@ export class GameEngine {
     return this.state.calls.some((c) => c.propId === Number(propId) && c.playerId === playerId);
   }
 
+  // ---- shared seam: both the replay ticker and the live feed drive these ----
+
+  /**
+   * Open a prop as the active call. The replay ticker and the live odds feed
+   * both funnel through here so both paths produce identical state transitions.
+   * Idempotent per prop id (the replay `offered` set and the live dedupe both
+   * already guard this, so it's a no-op belt-and-braces here).
+   */
+  openProp(prop: Prop) {
+    if (this.state.props.some((p) => p.id === prop.id)) return;
+    this.state.props.push(prop);
+    this.state.activeProp = prop;
+    this.pushTicker(`📣 New call · ${prop.label} — market ${Math.round(prop.yesPct * 100)}%`);
+    this.commit();
+  }
+
+  /**
+   * Settle a prop and score every call on it with the market-weighted formula
+   * (identical to the on-chain `settle_call`). Shared by the replay ticker and
+   * the live scores feed. No-op if the prop is missing or already settled.
+   */
+  resolveProp(propId: number, outcome: Side, label: string) {
+    const prop = this.state.props.find((p) => p.id === propId);
+    if (!prop || prop.status === "settled") return;
+    prop.status = "settled";
+    prop.outcome = outcome;
+    prop.resolveLabel = label;
+    if (this.state.activeProp?.id === propId) this.state.activeProp = undefined;
+    this.pushTicker(label);
+
+    for (const call of this.state.calls.filter((c) => c.propId === propId)) {
+      const correct = call.side === outcome;
+      const pts = pointsFor(call.side, call.marketYesPct, correct);
+      call.correct = correct;
+      call.points = pts;
+      const player = this.state.players.find((p) => p.id === call.playerId);
+      if (player) {
+        player.points += pts;
+        if (correct) {
+          player.correctCalls += 1;
+          player.streak += 1;
+        } else {
+          player.streak = 0;
+        }
+      }
+      if (call.playerId === YOU_ID) this.youSettledHandler?.(call, prop);
+    }
+    this.recomputeLeaderboard();
+    this.commit();
+  }
+
+  // ---- live-mode only (replay never calls these) ----
+
+  /** Mark a prop's window closed without settling it — honest "settling…" state. */
+  lockProp(propId: number) {
+    const prop = this.state.props.find((p) => p.id === propId);
+    if (prop && prop.status === "open") {
+      prop.status = "locked";
+      this.commit();
+    }
+  }
+
+  /** Reflect the real scoreline from the TxLINE scores feed. */
+  setScore(home: number, away: number) {
+    this.state.homeScore = home;
+    this.state.awayScore = away;
+    this.commit();
+  }
+
+  /** Advance the match clock from the scores/clock feed. */
+  setMinute(minute: number) {
+    this.state.minute = Math.max(0, Math.min(90, Math.floor(minute)));
+    this.commit();
+  }
+
+  /** Stamp the real TxLINE fixture id so on-chain receipts carry true provenance. */
+  setFixtureId(fixtureId: number) {
+    if (this.state.match.fixtureId === fixtureId) return;
+    this.state.match = { ...this.state.match, fixtureId };
+    this.commit();
+  }
+
+  /** End the match from a FULL_TIME scores event. */
+  endMatch() {
+    if (this.state.status === "fulltime") return;
+    this.state.status = "fulltime";
+    this.state.activeProp = undefined;
+    this.pushTicker("🏁 Full-time. The receipts don't lie.");
+    this.stop();
+    this.commit();
+  }
+
   // ---- internals ----
 
   private elapsed(): number {
@@ -143,9 +261,7 @@ export class GameEngine {
           windowEndsAt: this.startedAt + (r.offerAt + r.windowSec) * 1000,
           status: "open",
         };
-        this.state.props.push(prop);
-        this.state.activeProp = prop;
-        this.pushTicker(`📣 New call · ${r.label} — market ${Math.round(r.yesPct * 100)}%`);
+        this.openProp(prop);
       }
 
       // fire bot calls during the window
@@ -210,38 +326,13 @@ export class GameEngine {
   }
 
   private settleRound(r: ScriptRound) {
-    const { propId, outcome, resolveLabel } = r;
-    const prop = this.state.props.find((p) => p.id === propId);
-    if (prop) {
-      prop.status = "settled";
-      prop.outcome = outcome;
-      prop.resolveLabel = resolveLabel;
-      if (this.state.activeProp?.id === propId) this.state.activeProp = undefined;
-    }
+    // Score change first (disjoint state from the prop), then settle + score the
+    // calls via the shared seam — identical outcome to the pre-refactor path.
     if (r.scoreAfter) {
       this.state.homeScore = r.scoreAfter.home;
       this.state.awayScore = r.scoreAfter.away;
     }
-    this.pushTicker(resolveLabel);
-
-    for (const call of this.state.calls.filter((c) => c.propId === propId)) {
-      const correct = call.side === outcome;
-      const pts = pointsFor(call.side, call.marketYesPct, correct);
-      call.correct = correct;
-      call.points = pts;
-      const player = this.state.players.find((p) => p.id === call.playerId);
-      if (player) {
-        player.points += pts;
-        if (correct) {
-          player.correctCalls += 1;
-          player.streak += 1;
-        } else {
-          player.streak = 0;
-        }
-      }
-      if (call.playerId === YOU_ID && prop) this.youSettledHandler?.(call, prop);
-    }
-    this.recomputeLeaderboard();
+    this.resolveProp(r.propId, r.outcome, r.resolveLabel);
   }
 
   private recomputeLeaderboard() {

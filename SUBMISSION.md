@@ -34,16 +34,44 @@ impossible without TxLINE, and the on-chain receipt is the literal mechanism tha
 | Use | Endpoint | Fields consumed |
 |-----|----------|-----------------|
 | Generate calls + set difficulty | **Odds SSE** — `GET https://txline.txodds.com/api/odds/stream` (headers `Authorization: Bearer <JWT>`, `X-Api-Token`; query `fixtureId`; `Last-Event-ID` resume) | `InRunning`, `Pct[]` (implied %), `PriceNames[]`, `Prices[]`, `SuperOddsType`, `Ts`, `FixtureId` |
-| Settle calls | **Scores/events SSE** | goals, cards, match clock |
+| Settle calls | **Scores/events SSE** — `GET <TXLINE_SCORES_URL>` (same auth, same resume) | `type` (GOAL/…), `homeScore`, `awayScore`, `minute`, `label` |
 
 Integration code:
-- Server proxy (adds auth, normalises to `FeedEvent`): [`src/app/api/txline/stream/route.ts`](./src/app/api/txline/stream/route.ts)
-- Client adapter + odds→prop mapper: [`src/lib/txline/live-feed.ts`](./src/lib/txline/live-feed.ts)
+- Odds proxy (adds auth, forwards `id:` for resume, normalises to `FeedEvent`): [`src/app/api/txline/stream/route.ts`](./src/app/api/txline/stream/route.ts)
+- Scores proxy (mirror of the odds proxy → `{kind:"score", event}`): [`src/app/api/txline/scores/route.ts`](./src/app/api/txline/scores/route.ts)
+- Live-availability probe (`{live:boolean}`, no secrets): [`src/app/api/txline/status/route.ts`](./src/app/api/txline/status/route.ts)
+- Shared proxy plumbing (same-origin guard, concurrency cap, SSE frame parser) reused by both proxies: [`src/lib/txline/proxy.ts`](./src/lib/txline/proxy.ts) + [`src/lib/txline/sse.ts`](./src/lib/txline/sse.ts)
+- Client adapter + odds→prop mapper + **`LiveGameController`** (odds open calls, scores settle them): [`src/lib/txline/live-feed.ts`](./src/lib/txline/live-feed.ts)
 - Deterministic replay for the demo (matches end before judging): [`src/lib/game/replay-match.ts`](./src/lib/game/replay-match.ts)
 
 > ⚠️ Free / World-Cup tier samples odds **every ~60s** — exactly why the mechanic is "call the next
-> N minutes", not per-tick. The app talks to TxLINE through a `TxlineFeed` interface with `LiveTxlineFeed`
-> (real SSE, creds via `TXLINE_JWT` / `TXLINE_API_TOKEN`) and `ReplayFeed` (the demo). Drop in creds to go live.
+> N minutes", not per-tick.
+
+### Going live is literally one step
+
+The **same `GameEngine`** runs both paths — the replay ticker and the live feed drive the identical
+`openProp()` / `resolveProp()` seam, so live isn't a separate, untested code path.
+
+- **Default (no creds):** [`/api/txline/status`](./src/app/api/txline/status/route.ts) returns
+  `{live:false}`, the proxies return `503`, and the room runs the recorded replay. The scoreboard
+  badge honestly reads **`REPLAY · recorded TxLINE timeline`**.
+- **Drop in creds:** set `TXLINE_JWT` + `TXLINE_API_TOKEN` (server-side only). `status` flips to
+  `{live:true}`, the room auto-suggests live, and **`/room?feed=live&fixtureId=<id>`** subscribes the
+  real feeds: each odds snapshot opens a call (`propFromOdds`), a `GOAL` inside the window settles a
+  `NEXT_GOAL` call **YES** (else **NO** at window end); markets a mid-match event can't resolve stay
+  visibly "settling…" — **no outcome is ever fabricated in live mode**. The badge reads **`LIVE · TxLINE`**.
+- **Test it without real creds:** [`scripts/mock-txline.mjs`](./scripts/mock-txline.mjs) is a local SSE
+  server that replays recorded `OddsPayload` + `ScoreEvent` frames. Run it, point the proxies at it,
+  and the whole live path (open → dedupe → goal-settles-YES → no-goal-settles-NO → full-time) runs
+  end-to-end:
+  ```bash
+  node scripts/mock-txline.mjs                       # terminal 1  (:8787)
+  TXLINE_JWT=dev TXLINE_API_TOKEN=dev \
+  TXLINE_ODDS_URL=http://localhost:8787/odds \
+  TXLINE_SCORES_URL=http://localhost:8787/scores \
+  npm run dev                                        # terminal 2
+  # open http://localhost:3000/room?feed=live&fixtureId=1042026&window=8
+  ```
 
 ## Solana (devnet)
 
@@ -62,7 +90,9 @@ Integration code:
 
 ## How it meets the hard constraints
 
-- **TxLINE as a live input** ✅ — odds drive the calls + scoring; scores settle them (live adapter + replay).
+- **TxLINE as a live input** ✅ — odds drive the calls + scoring; scores settle them. The live path is
+  fully wired (`/room?feed=live`, odds + scores proxies, status probe) and testable via the mock SSE
+  server; the demo defaults to the recorded replay because World-Cup matches end before judging.
 - **Sign up through Solana** ✅ — wallet adapter; calling requires a connected wallet.
 - **Functional deployed product** — builds and runs (`npm run build` clean); deploy steps below.
 - **Demo-video-friendly** ✅ — replay + simulated crew; solo-vs-market is complete on its own.

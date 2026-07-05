@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { useGame } from "@/lib/game/use-game";
+import type { GameMode } from "@/lib/game/engine";
 import { recordCall } from "@/lib/solana/calledit-client";
 import { explorerTx } from "@/lib/solana/config";
 import type { GameState, MatchInfo, Side } from "@/lib/game/types";
@@ -18,7 +19,7 @@ import { Brand } from "@/components/Brand";
 import { Toasts, type Toast } from "@/components/Toasts";
 
 export default function RoomPage() {
-  // Suspense boundary required by Next 16 for useSearchParams (reads the ?crew= param)
+  // Suspense boundary required by Next 16 for useSearchParams (reads ?crew=, ?feed=, …)
   return (
     <Suspense fallback={null}>
       <RoomView />
@@ -26,8 +27,80 @@ export default function RoomPage() {
   );
 }
 
+/**
+ * Decides replay vs live before mounting the game. `?feed=live` only engages the
+ * live path when the status endpoint confirms creds are actually set — so
+ * without creds (or with a bad param) the app falls back to the recorded replay
+ * and behaves exactly like the default demo. The status probe also lets the
+ * default replay auto-suggest live when creds ARE present.
+ */
 function RoomView() {
-  const { engine, state } = useGame();
+  const searchParams = useSearchParams();
+  const crew = searchParams.get("crew") || "Demo crew";
+  const wantLive = searchParams.get("feed") === "live";
+  const fixtureId = Number(searchParams.get("fixtureId")) || undefined;
+  const windowSec = Number(searchParams.get("window")) || undefined;
+
+  const [liveAvailable, setLiveAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/txline/status")
+      .then((r) => r.json())
+      .then((d: { live?: boolean }) => {
+        if (active) setLiveAvailable(Boolean(d.live));
+      })
+      .catch(() => {
+        if (active) setLiveAvailable(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Only block on the probe when live was explicitly requested; the default
+  // replay renders immediately (unchanged behaviour) and picks up the hint later.
+  if (wantLive && liveAvailable === null) {
+    return <FeedGate />;
+  }
+
+  const mode: GameMode = wantLive && liveAvailable ? "live" : "replay";
+  return (
+    <RoomGame
+      mode={mode}
+      fixtureId={fixtureId}
+      windowSec={windowSec}
+      crew={crew}
+      liveAvailable={liveAvailable === true}
+    />
+  );
+}
+
+function FeedGate() {
+  return (
+    <main className="grid min-h-dvh place-items-center px-4">
+      <div className="text-center">
+        <div className="mx-auto mb-3 h-2 w-2 animate-live rounded-full bg-brand" />
+        <p className="font-display text-lg text-fg">Checking for a live TxLINE feed…</p>
+        <p className="mt-1 text-sm text-muted">Falls back to the recorded replay if none is configured.</p>
+      </div>
+    </main>
+  );
+}
+
+function RoomGame({
+  mode,
+  fixtureId,
+  windowSec,
+  crew,
+  liveAvailable,
+}: {
+  mode: GameMode;
+  fixtureId?: number;
+  windowSec?: number;
+  crew: string;
+  liveAvailable: boolean;
+}) {
+  const { engine, state } = useGame(mode, { fixtureId, windowSec });
   const { connected, publicKey } = useWallet();
   const anchorWallet = useAnchorWallet();
   const [started, setStarted] = useState(false);
@@ -36,9 +109,6 @@ function RoomView() {
   // but propId is salted so replaying with the same wallet mints fresh CallReceipt PDAs instead of
   // colliding on ["call", player, matchId, propId]. ~1.78e11, safely < 2^53; prop.id stays the low digits.
   const [sessionBase] = useState(() => Math.floor(Date.now() / 1000) * 100);
-  // FIX-11: crew name from ?crew= — makes the "link dropped in the group chat" story tangible (cosmetic)
-  const searchParams = useSearchParams();
-  const crew = searchParams.get("crew") || "Demo crew";
 
   const pushToast = useCallback((t: Toast) => {
     setToasts((cur) => [t, ...cur.filter((x) => x.id !== t.id)].slice(0, 4));
@@ -148,10 +218,16 @@ function RoomView() {
       </header>
 
       {!started ? (
-        <Pregame match={state.match} connected={connected} onKickOff={kickOff} />
+        <Pregame
+          match={state.match}
+          connected={connected}
+          mode={mode}
+          suggestLive={mode === "replay" && liveAvailable}
+          onKickOff={kickOff}
+        />
       ) : (
         <div className="mx-auto max-w-6xl px-4 py-6">
-          <Scoreboard state={state} />
+          <Scoreboard state={state} mode={mode} />
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <CallCard
@@ -179,12 +255,17 @@ function RoomView() {
 function Pregame({
   match,
   connected,
+  mode,
+  suggestLive,
   onKickOff,
 }: {
   match: MatchInfo;
   connected: boolean;
+  mode: GameMode;
+  suggestLive: boolean;
   onKickOff: () => void;
 }) {
+  const live = mode === "live";
   return (
     <div className="mx-auto grid min-h-[70vh] max-w-xl place-items-center px-4">
       <div className="w-full rounded-3xl border border-border bg-surface/60 p-8 text-center">
@@ -195,8 +276,9 @@ function Pregame({
           <Side flag={match.away.flag} short={match.away.short} />
         </div>
         <p className="mt-6 text-sm text-muted">
-          Replaying a live TxLINE feed. Make your calls against the market before each window
-          closes — every call gets a Solana receipt.
+          {live
+            ? "Streaming the live TxLINE feed. Calls open as the market moves — tap in before each window closes; every call gets a Solana receipt."
+            : "Replaying a recorded TxLINE timeline. Make your calls against the market before each window closes — every call gets a Solana receipt."}
         </p>
         <div className="mt-6 space-y-3">
           {connected ? (
@@ -204,7 +286,7 @@ function Pregame({
               onClick={onKickOff}
               className="w-full rounded-full bg-brand px-6 py-3 font-display font-bold text-bg transition hover:brightness-110 cursor-pointer glow-brand"
             >
-              Kick off ⚽
+              {live ? "Go live ⚽" : "Kick off ⚽"}
             </button>
           ) : (
             <>
@@ -218,6 +300,15 @@ function Pregame({
                 Watch as spectator →
               </button>
             </>
+          )}
+          {suggestLive && (
+            <p className="text-xs text-muted">
+              ⚡ A live TxLINE feed is configured —{" "}
+              <Link href="/room?feed=live" className="font-semibold text-brand hover:underline">
+                play it live
+              </Link>
+              .
+            </p>
           )}
         </div>
       </div>

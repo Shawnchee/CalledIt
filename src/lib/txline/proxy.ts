@@ -196,3 +196,66 @@ export async function proxyEventStream(
     },
   });
 }
+
+export interface TxlineStreamRouteConfig {
+  /** Upstream SSE base URL (an env-configurable TxLINE endpoint). */
+  upstreamBase: string;
+  /** Per-route concurrent-connection limiter (module-scoped in the route). */
+  limiter: ConnectionLimiter;
+  /** Per-frame normaliser — e.g. `{kind:"odds",payload}` / `{kind:"score",event}`. */
+  normalize: (data: string) => unknown;
+  /** Human hint returned in the 503 body when creds are missing. */
+  missingCredsHint?: string;
+}
+
+/**
+ * The full GET flow shared by the odds and scores SSE proxies: same-origin
+ * guard → creds check (503 without them) → concurrency cap (429) → build the
+ * upstream URL → stream. The only per-route differences are the upstream base
+ * and the frame normaliser, so a new proxy route is a few lines over this
+ * helper instead of a copy-paste of the auth/limit boilerplate.
+ */
+export async function handleTxlineStreamRequest(
+  request: Request,
+  config: TxlineStreamRouteConfig,
+): Promise<Response> {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const jwt = process.env.TXLINE_JWT;
+  const apiToken = process.env.TXLINE_API_TOKEN;
+  if (!jwt || !apiToken) {
+    return Response.json(
+      {
+        error: "TxLINE credentials not configured",
+        hint:
+          config.missingCredsHint ??
+          "Set TXLINE_JWT and TXLINE_API_TOKEN to stream live data; the demo uses the recorded replay.",
+      },
+      { status: 503 },
+    );
+  }
+
+  if (!config.limiter.tryAcquire()) {
+    return Response.json(
+      { error: "Too many concurrent streams — try again shortly" },
+      { status: 429 },
+    );
+  }
+
+  const { searchParams } = new URL(request.url);
+  const upstreamUrl = buildUpstreamUrl(config.upstreamBase, {
+    fixtureId: searchParams.get("fixtureId"),
+  });
+  const lastEventId = request.headers.get("Last-Event-ID");
+
+  return proxyEventStream({
+    upstreamUrl,
+    creds: { jwt, apiToken },
+    lastEventId,
+    signal: request.signal,
+    normalize: config.normalize,
+    onClose: () => config.limiter.release(),
+  });
+}

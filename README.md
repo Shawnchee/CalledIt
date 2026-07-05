@@ -65,16 +65,33 @@ have ended (see Demo plan).
 | Use | TxLINE source | Field(s) |
 |-----|---------------|----------|
 | Generate calls + set difficulty | **Odds SSE** `GET /api/odds/stream` (Bearer JWT + `X-Api-Token`, optional `fixtureId`, `Last-Event-ID` resume) | `InRunning` (in-play flag), `Pct[]` (implied %), `PriceNames[]`, `Prices[]`, `SuperOddsType`, `Ts` |
-| Settle calls | **Scores/events SSE** | goals, cards, match clock |
+| Settle calls | **Scores/events SSE** | `type` (GOAL/…), `homeScore`, `awayScore`, `minute`, `label` |
 
 ⚠️ **Cadence:** free / World-Cup tier samples odds **every 60s**, not per-tick — fine for the
 "call the next 10 minutes" window mechanic. Docs: https://txline-docs.txodds.com ·
 API ref: https://txline-docs.txodds.com/api-reference
 
-The app talks to TxLINE through a `TxlineFeed` adapter with two implementations:
-`LiveTxlineFeed` (real SSE endpoints, creds via env) for live matches, and `ReplayFeed`
-(recorded/synthetic match timeline) for the demo video — matches end before judging, so the video
-must carry the experience.
+The browser can't set auth headers on an `EventSource`, so both feeds go through server proxies that
+add the creds and normalise each frame to a `FeedEvent`:
+[`/api/txline/stream`](./src/app/api/txline/stream/route.ts) (odds) and
+[`/api/txline/scores`](./src/app/api/txline/scores/route.ts) (scores) — both built on shared plumbing
+in [`src/lib/txline/proxy.ts`](./src/lib/txline/proxy.ts) (same-origin guard, concurrency cap, `id:`
+resume). Client-side, `LiveTxlineFeed` consumes them and `LiveGameController`
+([`src/lib/txline/live-feed.ts`](./src/lib/txline/live-feed.ts)) drives the engine: **odds open calls,
+scores settle them** — through the exact same `openProp()` / `resolveProp()` seam the recorded replay
+uses, so live is not a separate untested path.
+
+### Going live (drop in creds → it's true)
+
+- Without creds, [`/api/txline/status`](./src/app/api/txline/status/route.ts) returns `{live:false}`,
+  the proxies return `503`, and the room runs the recorded replay (badge: **`REPLAY`**).
+- Set `TXLINE_JWT` + `TXLINE_API_TOKEN` (server env), then open **`/room?feed=live&fixtureId=<id>`**:
+  props open from the odds stream and a `GOAL` settles a `NEXT_GOAL` call **YES** (else **NO** at
+  window end). Markets a mid-match event can't resolve stay honestly "settling…" — **live mode never
+  fabricates an outcome**. Badge: **`LIVE · TxLINE`**.
+- No real creds? [`scripts/mock-txline.mjs`](./scripts/mock-txline.mjs) is a local SSE server that
+  replays recorded odds + score frames so the whole live path is testable end-to-end (see its header
+  for the exact env + URL).
 
 ## Solana
 
