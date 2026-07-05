@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Brand } from "@/components/Brand";
 import { WalletButton } from "@/components/WalletButton";
+import { payoutMultiple, potentialPoints } from "@/lib/game/scoring";
 
 export default function Landing() {
   return (
@@ -109,8 +110,16 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
   );
 }
 
+/** Market split shown in the static preview — kept in sync with the engine's math below. */
+const PREVIEW_YES_PCT = 0.27;
+
 /** Static product preview — sells the mechanic at a glance. */
 function PreviewCard() {
+  const yesPts = potentialPoints("YES", PREVIEW_YES_PCT);
+  const yesMult = payoutMultiple("YES", PREVIEW_YES_PCT);
+  const noPts = potentialPoints("NO", PREVIEW_YES_PCT);
+  const noMult = payoutMultiple("NO", PREVIEW_YES_PCT);
+
   return (
     <div className="relative">
       <div className="absolute -inset-6 -z-10 rounded-[2.4rem] bg-brand/10 blur-3xl" />
@@ -140,11 +149,15 @@ function PreviewCard() {
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="flex min-h-[84px] flex-col items-center justify-center rounded-2xl border border-yes/40 bg-yes/10 font-display font-bold text-yes">
             <span className="text-2xl">YES</span>
-            <span className="font-mono tnum text-xs opacity-90">+370 pts · 3.7×</span>
+            <span className="font-mono tnum text-xs opacity-90">
+              +{yesPts} pts · {yesMult.toFixed(1)}×
+            </span>
           </div>
           <div className="flex min-h-[84px] flex-col items-center justify-center rounded-2xl border border-no/40 bg-no/10 font-display font-bold text-no">
             <span className="text-2xl">NO</span>
-            <span className="font-mono tnum text-xs opacity-90">+137 pts · 1.4×</span>
+            <span className="font-mono tnum text-xs opacity-90">
+              +{noPts} pts · {noMult.toFixed(1)}×
+            </span>
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-muted">

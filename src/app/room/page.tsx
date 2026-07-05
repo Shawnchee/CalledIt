@@ -21,6 +21,10 @@ export default function RoomPage() {
   const anchorWallet = useAnchorWallet();
   const [started, setStarted] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // FIX-01: one salt base per room session. matchId stays the real TxLINE fixture id (provenance),
+  // but propId is salted so replaying with the same wallet mints fresh CallReceipt PDAs instead of
+  // colliding on ["call", player, matchId, propId]. ~1.78e11, safely < 2^53; prop.id stays the low digits.
+  const [sessionBase] = useState(() => Math.floor(Date.now() / 1000) * 100);
 
   const pushToast = useCallback((t: Toast) => {
     setToasts((cur) => [t, ...cur.filter((x) => x.id !== t.id)].slice(0, 4));
@@ -42,7 +46,7 @@ export default function RoomPage() {
   }, [publicKey, engine]);
 
   useEffect(() => {
-    engine.onYouSettled = (call, prop) => {
+    engine.setYouSettledHandler((call, prop) => {
       if (call.correct) {
         pushToast({
           id: `s-${call.id}`,
@@ -59,9 +63,9 @@ export default function RoomPage() {
           body: prop.resolveLabel ?? prop.label,
         });
       }
-    };
+    });
     return () => {
-      engine.onYouSettled = undefined;
+      engine.setYouSettledHandler(undefined);
     };
   }, [engine, pushToast]);
 
@@ -85,7 +89,7 @@ export default function RoomPage() {
       try {
         const { sig } = await recordCall(anchorWallet, {
           matchId: state.match.fixtureId,
-          propId: prop.id,
+          propId: sessionBase + prop.id, // salted per session (FIX-01); prop.id remains the low digits
           side,
           yesPct: prop.yesPct,
         });
@@ -99,7 +103,7 @@ export default function RoomPage() {
         });
       }
     },
-    [state.activeProp, state.match.fixtureId, anchorWallet, engine, pushToast, updateToast],
+    [state.activeProp, state.match.fixtureId, sessionBase, anchorWallet, engine, pushToast, updateToast],
   );
 
   const kickOff = () => {

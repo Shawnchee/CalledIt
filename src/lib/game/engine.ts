@@ -37,7 +37,15 @@ export class GameEngine {
   private botFired = new Set<string>();
 
   /** Called when the local player's call is settled — lets the UI react. */
-  onYouSettled?: (call: Call, prop: Prop) => void;
+  private youSettledHandler?: (call: Call, prop: Prop) => void;
+
+  /**
+   * Register the settled-call handler. A method (not a public mutable field) so
+   * the React caller doesn't mutate a hook-returned value (react-hooks v6).
+   */
+  setYouSettledHandler(fn: ((call: Call, prop: Prop) => void) | undefined) {
+    this.youSettledHandler = fn;
+  }
 
   constructor(script: MatchScript = SCRIPT, youName = "You", youAvatar = "🫵") {
     this.script = script;
@@ -195,6 +203,8 @@ export class GameEngine {
     if (playerId !== YOU_ID && player) {
       this.pushTicker(`${player.avatar} ${player.name} called ${side} · ${prop.label}`);
     }
+    // refresh so "N/M called right" reflects the new call immediately, not only after settle
+    this.recomputeLeaderboard();
     this.commit();
     return call;
   }
@@ -229,7 +239,7 @@ export class GameEngine {
           player.streak = 0;
         }
       }
-      if (call.playerId === YOU_ID && prop) this.onYouSettled?.(call, prop);
+      if (call.playerId === YOU_ID && prop) this.youSettledHandler?.(call, prop);
     }
     this.recomputeLeaderboard();
   }
