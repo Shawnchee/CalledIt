@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# superstack phase-context (local working files, not part of the product)
+.superstack/
+
 # playwright mcp screenshots
 /.playwright-mcp/
 

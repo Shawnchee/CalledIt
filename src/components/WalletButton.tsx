@@ -24,6 +24,16 @@ export function WalletButton({ size = "md" }: { size?: "md" | "lg" }) {
     }
   }, [wallet, connected, connecting, connect]);
 
+  // a11y: close the wallet dropdown on Escape (overlay click alone isn't keyboard-reachable)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const pad = size === "lg" ? "px-6 py-3 text-base" : "px-4 py-2 text-sm";
 
   if (connected && publicKey) {
@@ -46,6 +56,8 @@ export function WalletButton({ size = "md" }: { size?: "md" | "lg" }) {
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={connecting}
+        aria-haspopup="menu"
+        aria-expanded={open}
         className={`inline-flex items-center gap-2 rounded-full bg-brand ${pad} font-semibold text-bg transition hover:brightness-110 disabled:opacity-60 cursor-pointer glow-brand`}
       >
         <span className="h-2 w-2 rounded-full bg-bg/80" />
