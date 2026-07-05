@@ -18,7 +18,10 @@ export function Toasts({
   onDismiss: (id: string) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-[min(92vw,380px)] flex-col gap-2">
+    // FIX-13: below `sm`, the CallCard's YES/NO buttons can sit low enough in the viewport
+    // that 2+ stacked bottom-right toasts cover them; anchor to the top (clear of the sticky
+    // header) on phones and keep the original bottom-right placement from `sm` up.
+    <div className="pointer-events-none fixed right-4 top-20 z-50 flex w-[min(92vw,380px)] flex-col gap-2 sm:top-auto sm:bottom-4">
       {toasts.map((t) => (
         <ToastCard key={t.id} t={t} onDismiss={onDismiss} />
       ))}

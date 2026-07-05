@@ -34,7 +34,10 @@ export function WalletButton({ size = "md" }: { size?: "md" | "lg" }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const pad = size === "lg" ? "px-6 py-3 text-base" : "px-4 py-2 text-sm";
+  // FIX-13: the header's "md" button measured 36px tall — below the 44px mobile tap-target
+  // floor. `min-h-11` enforces it on phones only; `sm:min-h-0` lets it shrink back to the
+  // original (desktop-unchanged) ~36px from `sm` up.
+  const pad = size === "lg" ? "px-6 py-3 text-base" : "px-4 py-2 text-sm min-h-11 sm:min-h-0";
 
   if (connected && publicKey) {
     const a = publicKey.toBase58();

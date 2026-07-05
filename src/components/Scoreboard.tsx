@@ -35,20 +35,23 @@ export function Scoreboard({ state, mode = "replay" }: { state: GameState; mode?
  * pill can never claim "LIVE" over a scripted replay.
  */
 function FeedPill({ live }: { live: boolean }) {
+  // FIX-13: the descriptive suffix is dropped below `sm` — squeezed between the two
+  // flex-1 Team blocks at phone width, the full text was wrapping the pill into a
+  // 3-line blob instead of a one-line badge (and forcing the row wider than the viewport).
   if (live) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-bg/60 px-3 py-1 text-[11px]">
+      <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-bg/60 px-3 py-1 text-[11px]">
         <span className="h-1.5 w-1.5 rounded-full bg-live animate-live" />
         <span className="font-semibold text-live">LIVE</span>
-        <span className="text-muted">· TxLINE</span>
+        <span className="hidden text-muted sm:inline">· TxLINE</span>
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-bg/60 px-3 py-1 text-[11px]">
+    <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-bg/60 px-3 py-1 text-[11px]">
       <span className="h-1.5 w-1.5 rounded-full bg-muted" />
       <span className="font-semibold text-fg">REPLAY</span>
-      <span className="text-muted">· recorded TxLINE timeline</span>
+      <span className="hidden text-muted sm:inline">· recorded TxLINE timeline</span>
     </span>
   );
 }

@@ -122,7 +122,7 @@ function PreviewCard() {
 
   return (
     <div className="relative">
-      <div className="absolute -inset-6 -z-10 rounded-[2.4rem] bg-brand/10 blur-3xl" />
+      <div className="absolute -inset-3 -z-10 rounded-[2.4rem] bg-brand/10 blur-3xl sm:-inset-6" />
       <div className="device-frame">
         <div className="rounded-[1.4rem] border border-border bg-surface/85 p-6 backdrop-blur">
         <div className="mb-4 flex items-center justify-between">
