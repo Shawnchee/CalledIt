@@ -25,6 +25,12 @@ export interface Prop {
   detail?: string;
   /** TxLINE market this came from (provenance shown in the UI). */
   superOddsType: string;
+  /**
+   * Which team the YES side is about, when the prop is team-specific (e.g. a
+   * "Home to score…" call). Lets the scores feed settle YES only on a goal by
+   * this team. Absent for team-agnostic props (replay corners/cards/etc.).
+   */
+  team?: "home" | "away";
   /** Market implied probability of YES (0..1), from TxLINE Pct[]. */
   yesPct: number;
   /** ms timestamp the call window opened. */
@@ -35,6 +41,15 @@ export interface Prop {
   outcome?: Outcome;
   /** Settlement label, e.g. "⚽ GOAL — Álvarez 29'". */
   resolveLabel?: string;
+  /**
+   * Odds-provenance markers from the TxLINE OddsPayload this prop was built
+   * from (live mode only — see propFromOdds in live-feed.ts). Absent in
+   * replay: the demo timeline is scripted, not a real odds snapshot, so
+   * there's nothing honest to attribute. Surfaced on the receipt page as the
+   * provenance chip; never fabricated.
+   */
+  oddsTs?: number;
+  oddsMessageId?: string;
 }
 
 export interface Call {
@@ -50,6 +65,8 @@ export interface Call {
   correct?: boolean;
   /** On-chain receipt signature, once the call is recorded on devnet. */
   receiptSig?: string;
+  /** CallReceipt PDA address (base58) — the branded receipt page lives at /receipt/[address]. */
+  receiptAddress?: string;
 }
 
 export interface Player {

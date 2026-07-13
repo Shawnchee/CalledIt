@@ -31,8 +31,9 @@ export function Scoreboard({ state, mode = "replay" }: { state: GameState; mode?
 
 /**
  * Honest mode badge. LIVE only when the engine is actually driven by the live
- * TxLINE feed; the default demo runs a recorded timeline and says so, so the
- * pill can never claim "LIVE" over a scripted replay.
+ * TxLINE feed; the default demo runs a SIMULATED (authored) timeline and says
+ * so — never "recorded"/"LIVE" over scripted data. Swap for a real captured
+ * fixture to upgrade the badge copy to "recorded".
  */
 function FeedPill({ live }: { live: boolean }) {
   // FIX-13: the descriptive suffix is dropped below `sm` — squeezed between the two
@@ -50,8 +51,8 @@ function FeedPill({ live }: { live: boolean }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-bg/60 px-3 py-1 text-[11px]">
       <span className="h-1.5 w-1.5 rounded-full bg-muted" />
-      <span className="font-semibold text-fg">REPLAY</span>
-      <span className="hidden text-muted sm:inline">· recorded TxLINE timeline</span>
+      <span className="font-semibold text-fg">SIMULATED</span>
+      <span className="hidden text-muted sm:inline">· demo timeline</span>
     </span>
   );
 }

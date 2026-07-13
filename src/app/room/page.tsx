@@ -7,7 +7,7 @@ import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { useGame } from "@/lib/game/use-game";
 import type { GameMode } from "@/lib/game/engine";
 import { recordCall } from "@/lib/solana/calledit-client";
-import { explorerTx } from "@/lib/solana/config";
+import { receiptHref } from "@/lib/solana/receipt-link";
 import type { GameState, MatchInfo, Side } from "@/lib/game/types";
 import { Scoreboard } from "@/components/Scoreboard";
 import { CallCard } from "@/components/CallCard";
@@ -175,13 +175,14 @@ function RoomGame({
       const tId = `tx-${call.id}`;
       pushToast({ id: tId, kind: "pending", title: `Locking ${side} on devnet…`, body: prop.label });
       try {
-        const { sig } = await recordCall(anchorWallet, {
+        const { sig, receipt } = await recordCall(anchorWallet, {
           matchId: state.match.fixtureId,
           propId: sessionBase + prop.id, // salted per session (FIX-01); prop.id remains the low digits
           side,
           yesPct: prop.yesPct,
+          windowEndsAt: prop.windowEndsAt,
         });
-        engine.attachReceipt(call.id, sig);
+        engine.attachReceipt(call.id, sig, receipt);
         updateToast(tId, { kind: "confirmed", title: "Receipt minted on-chain", sig });
       } catch (e) {
         updateToast(tId, {
@@ -235,9 +236,10 @@ function RoomGame({
                 yourCall={yourCall}
                 canCall={connected}
                 onCall={handleCall}
+                match={state.match}
               />
               {state.status === "fulltime" && <FullTime state={state} crew={crew} />}
-              <YourReceipts calls={state.calls} props={state.props} />
+              <YourReceipts calls={state.calls} props={state.props} match={state.match} />
             </div>
             <div className="space-y-5">
               <Leaderboard rows={state.leaderboard} />
@@ -332,14 +334,16 @@ function FullTime({ state, crew }: { state: GameState; crew: string }) {
   const won = you && top && you.id === top.id;
 
   const matchLabel = `${state.match.home.short} ${state.homeScore}–${state.awayScore} ${state.match.away.short}`;
-  // best call = highest-points settled-correct call that has an on-chain receipt
+  // best call = highest-points settled-correct call that has a branded receipt to link to
   const best = state.calls
-    .filter((c) => c.playerId === "you" && c.correct && c.points != null && c.receiptSig)
+    .filter((c) => c.playerId === "you" && c.correct && c.points != null && c.receiptAddress)
     .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))[0];
   const bestProp = best ? state.props.find((p) => p.id === best.propId) : undefined;
 
   const shareReceipts = async () => {
-    const host = typeof window !== "undefined" ? window.location.host : "calledit";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const href = best ? receiptHref(best, bestProp, state.match) : undefined;
+    const receiptUrl = href ? `${origin}${href}` : undefined;
     const marketPct = best
       ? Math.round((best.side === "YES" ? best.marketYesPct : 1 - best.marketYesPct) * 100)
       : 0;
@@ -347,12 +351,24 @@ function FullTime({ state, crew }: { state: GameState; crew: string }) {
       `CalledIt — ${matchLabel} FT`,
       `🏆 #${you?.rank ?? "—"} · ${you?.points.toLocaleString()} pts · ${you?.correctCalls}/${you?.totalCalls} called right`,
       best && bestProp
-        ? `Best call: ${bestProp.resolveLabel ?? bestProp.label} — market said ${marketPct}%, I called it. Receipt: ${explorerTx(best.receiptSig!)}`
+        ? `Best call: ${bestProp.resolveLabel ?? bestProp.label} — market said ${marketPct}%, I called it.`
         : null,
-      host,
+      receiptUrl ?? origin,
     ].filter(Boolean);
+    const text = lines.join("\n");
+
+    // Prefer the native share sheet (great on-camera moment on mobile); fall back to clipboard.
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await navigator.share({ title: "CalledIt — I called it", text, url: receiptUrl ?? origin });
+        return;
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") return; // user dismissed the share sheet — respect it
+        // otherwise fall through to the clipboard path below
+      }
+    }
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

@@ -34,7 +34,10 @@ export function useGame(mode: GameMode = "replay", live: LiveOptions = {}) {
   useEffect(() => {
     if (mode !== "live") return;
     const controller = new LiveGameController(engine, fixtureId, windowSec);
-    controller.start();
+    // start() is async (it resolves the real fixture first) but never throws;
+    // fire-and-forget and rely on stop() (which flips an internal guard) if the
+    // effect tears down mid-resolve.
+    void controller.start();
     return () => controller.stop();
   }, [engine, mode, fixtureId, windowSec]);
 

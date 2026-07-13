@@ -2,9 +2,11 @@ import type {
   Call,
   GameState,
   LeaderboardRow,
+  MatchInfo,
   Player,
   Prop,
   Side,
+  TeamInfo,
 } from "./types";
 import { pointsFor } from "./scoring";
 import { BOTS, SCRIPT, type MatchScript, type ScriptRound } from "./replay-match";
@@ -131,11 +133,12 @@ export class GameEngine {
     return this.addCall(YOU_ID, propId, side);
   }
 
-  /** Attach the devnet receipt signature once record_call confirms. */
-  attachReceipt(callId: string, sig: string) {
+  /** Attach the devnet receipt signature + CallReceipt PDA address once record_call confirms. */
+  attachReceipt(callId: string, sig: string, receiptAddress?: string) {
     const c = this.state.calls.find((x) => x.id === callId);
     if (c) {
       c.receiptSig = sig;
+      if (receiptAddress) c.receiptAddress = receiptAddress;
       this.commit();
     }
   }
@@ -223,6 +226,37 @@ export class GameEngine {
   setFixtureId(fixtureId: number) {
     if (this.state.match.fixtureId === fixtureId) return;
     this.state.match = { ...this.state.match, fixtureId };
+    this.commit();
+  }
+
+  /**
+   * Replace the placeholder match (from replay-match.ts) with the REAL fixture
+   * the live loop resolved from /api/txline/fixtures — team names, competition,
+   * and id. Real flags aren't in the TxLINE payload, so `flag` is cleared and
+   * `short` is the first 3 letters of the name; the brand colours from the
+   * placeholder teams are kept so the UI still has a palette. Live-mode only.
+   */
+  setMatch(info: {
+    fixtureId?: number;
+    competition?: string;
+    homeName: string;
+    awayName: string;
+  }) {
+    const prev = this.state.match;
+    const rename = (base: TeamInfo, name: string): TeamInfo => ({
+      name,
+      short: name.slice(0, 3).toUpperCase(),
+      flag: "",
+      color: base.color,
+    });
+    const match: MatchInfo = {
+      fixtureId: info.fixtureId ?? prev.fixtureId,
+      competition: info.competition || prev.competition,
+      home: rename(prev.home, info.homeName),
+      away: rename(prev.away, info.awayName),
+    };
+    this.state.match = match;
+    this.pushTicker(`Fixture set · ${info.homeName} v ${info.awayName}`);
     this.commit();
   }
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Call, Prop, Side } from "@/lib/game/types";
+import Link from "next/link";
+import type { Call, MatchInfo, Prop, Side } from "@/lib/game/types";
 import { formatPct, payoutMultiple, potentialPoints } from "@/lib/game/scoring";
-import { explorerTx } from "@/lib/solana/config";
+import { receiptHref } from "@/lib/solana/receipt-link";
 import { CountdownRing } from "./CountdownRing";
 
 export function CallCard({
@@ -11,11 +12,13 @@ export function CallCard({
   yourCall,
   canCall,
   onCall,
+  match,
 }: {
   prop?: Prop;
   yourCall?: Call;
   canCall: boolean;
   onCall: (side: Side) => void;
+  match?: MatchInfo;
 }) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -80,7 +83,7 @@ export function CallCard({
 
       {/* your call / the buttons */}
       {yourCall ? (
-        <YourCall call={yourCall} />
+        <YourCall call={yourCall} prop={prop} match={match} />
       ) : open ? (
         <div className="mt-6 grid grid-cols-2 gap-3">
           <CallButton
@@ -145,8 +148,9 @@ function CallButton({
   );
 }
 
-function YourCall({ call }: { call: Call }) {
+function YourCall({ call, prop, match }: { call: Call; prop?: Prop; match?: MatchInfo }) {
   const yes = call.side === "YES";
+  const href = receiptHref(call, prop, match);
   return (
     <div className="mt-6 rounded-2xl border border-border bg-bg/50 p-4">
       <div className="flex items-center justify-between">
@@ -158,15 +162,13 @@ function YourCall({ call }: { call: Call }) {
         </span>
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-border pt-3 text-xs">
-        {call.receiptSig ? (
-          <a
-            href={explorerTx(call.receiptSig)}
-            target="_blank"
-            rel="noreferrer"
+        {href ? (
+          <Link
+            href={href}
             className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
           >
-            <span>📜</span> Receipt on-chain — view on Solana Explorer ↗
-          </a>
+            <span>📜</span> Receipt on-chain — view your CALLED IT card →
+          </Link>
         ) : (
           <span className="inline-flex items-center gap-2 text-muted">
             <span className="h-1.5 w-1.5 animate-live rounded-full bg-market" />
