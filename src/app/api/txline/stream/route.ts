@@ -4,18 +4,27 @@ import {
   isSameOrigin,
   proxyEventStream,
 } from "@/lib/txline/proxy";
-import type { FeedEvent, OddsPayload } from "@/lib/txline/types";
+import { oddsStreamUrl } from "@/lib/txline/config";
+import { mapOddsFrame } from "@/lib/txline/mapping";
+import type { FeedEvent } from "@/lib/txline/types";
 
 /**
  * Server-side proxy to the TxLINE odds SSE stream.
  *
- *   GET https://txline.txodds.com/api/odds/stream
+ *   GET <oddsStreamUrl()>   (devnet by default — see src/lib/txline/config.ts)
  *   Headers: Authorization: Bearer <JWT>, X-Api-Token: <token>
  *   Query:   fixtureId (optional), Last-Event-ID (resume, via header)
  *
  * The browser's EventSource can't set auth headers, so we connect upstream
  * here (creds from server env), normalise each odds snapshot into a FeedEvent,
  * and re-emit as SSE to the client (`LiveTxlineFeed`).
+ *
+ * Normalisation: an upstream `data:` frame may be ONE odds record or a JSON
+ * array of them; `mapOddsFrame` (src/lib/txline/mapping.ts) handles both and
+ * maps raw wire fields (string-percent `Pct`, ×1000 integer `Prices`,
+ * "part1"/"draw"/"part2" `PriceNames`) to the clean `OddsPayload` the app
+ * consumes. Returning `null` drops the frame (keep-alive, non-JSON, or an
+ * unmappable record) — see proxyEventStream's `normalize` doc in proxy.ts.
  *
  * Without creds it returns 503 — the demo runs on the deterministic ReplayFeed,
  * and this flips to real data the moment TXLINE_JWT / TXLINE_API_TOKEN are set.
@@ -28,9 +37,6 @@ import type { FeedEvent, OddsPayload } from "@/lib/txline/types";
  * and src/lib/txline/sse.ts so the upcoming scores proxy can reuse it.
  */
 export const dynamic = "force-dynamic";
-
-const ODDS_URL =
-  process.env.TXLINE_ODDS_URL ?? "https://txline.txodds.com/api/odds/stream";
 
 // Cap concurrent upstream connections this route will hold open at once.
 // Per-serverless-instance (module-scoped memory) — good enough to raise the
@@ -65,7 +71,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const upstreamUrl = buildUpstreamUrl(ODDS_URL, {
+  const upstreamUrl = buildUpstreamUrl(oddsStreamUrl(), {
     fixtureId: searchParams.get("fixtureId"),
   });
   const lastEventId = request.headers.get("Last-Event-ID");
@@ -75,9 +81,10 @@ export async function GET(request: Request) {
     creds: { jwt, apiToken },
     lastEventId,
     signal: request.signal,
-    normalize: (data): FeedEvent => {
-      const payload = JSON.parse(data) as OddsPayload;
-      return { kind: "odds", payload };
+    normalize: (data): FeedEvent | null => {
+      const parsed: unknown = JSON.parse(data);
+      const payload = mapOddsFrame(parsed);
+      return payload ? { kind: "odds", payload } : null;
     },
     onClose: () => limiter.release(),
   });

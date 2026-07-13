@@ -1,9 +1,14 @@
 // mock-txline.mjs — a tiny local stand-in for the TxLINE odds + scores SSE
 // endpoints, so `/room?feed=live` is fully testable WITHOUT real credentials.
 //
-// It emits recorded OddsPayload frames (opening calls) on /odds and ScoreEvent
-// frames (settling them) on /scores, on the same SSE wire shape the real TxLINE
-// API uses (id: + data: lines, Bearer/X-Api-Token headers accepted and ignored).
+// Frames below are REAL devnet-shaped records (captured 2026-07-12 from
+// https://txline-dev.txodds.com — see GROUND-TRUTH.md): the odds frames are
+// StablePrice 1X2 records (France v Spain, fixture 18237038) with `InRunning`
+// flipped true (the live capture happened to be pregame), and the scores
+// frames are real event records (Argentina v Switzerland, fixture 18222446)
+// re-timed for the mock timeline. This is NOT the old invented
+// {type,homeScore,awayScore,minute,label} shape — it's what
+// src/lib/txline/mapping.ts actually has to parse.
 //
 // ── Run it ────────────────────────────────────────────────────────────────
 //   node scripts/mock-txline.mjs                      # listens on :8787
@@ -16,57 +21,95 @@
 //   TXLINE_SCORES_URL=http://localhost:8787/scores \
 //   npm run dev
 //
-// Then open (a short call window keeps the whole timeline testable in ~45s):
-//   http://localhost:3000/room?feed=live&fixtureId=1042026&window=8
+// Then open (a short call window keeps the whole timeline testable in ~40s):
+//   http://localhost:3000/room?feed=live&fixtureId=18222446&window=8
 //
-// You'll see: a call open from the odds feed (a 2nd odds frame is deduped while
-// it's open) → a GOAL settle it YES → the next call go NO when no goal lands in
-// its window → a MATCH_ODDS call left honestly "settling…" → a final GOAL settle
-// YES → FULL-TIME. Nothing is faked: settlement comes only from scores frames.
+// There is deliberately NO /fixtures endpoint here: the app's fixtures fetch
+// fails and LiveGameController falls back to defaults (participant1IsHome=true,
+// placeholder team names), which is the path the goal records below target.
+//
+// You'll see: a "<home> to score in the next N min?" call open from the odds
+// feed (a 2nd odds frame is deduped while it's open) → a home GOAL inside the
+// window settle it YES → the next call, with no goal in its window, settle NO
+// → a final home GOAL settle YES → FULL-TIME. Nothing is faked: settlement
+// comes only from real-shaped scores frames, and only from a home goal whose
+// Ts is after the call opened.
 
 import http from "node:http";
 
 const PORT = Number(process.env.PORT) || 8787;
+const DEFAULT_FIXTURE_ID = 18222446;
 
-const odds = (t, superType, priceNames, pct, fixtureId) => ({
+// A real StablePrice 1X2 record shape (see probe-out/sample-odds.json). The
+// real capture had `InRunning: false` even mid-match, so we mirror that here —
+// propFromOdds must (and does) NOT gate on it. The `-stab` MessageId marks it
+// as a StablePrice record, which propFromOdds requires.
+const odds = (t, fixtureId, prices, pct, messageId) => ({
   at: t,
   payload: {
     FixtureId: fixtureId,
+    MessageId: messageId,
     Ts: Date.now(),
-    Bookmaker: "MockBook",
-    SuperOddsType: superType,
-    InRunning: true,
-    PriceNames: priceNames,
-    Prices: pct.map((p) => Number((1 / Math.max(0.01, p)).toFixed(2))),
+    Bookmaker: "TXLineStablePriceDemargined",
+    BookmakerId: 10021,
+    SuperOddsType: "1X2_PARTICIPANT_RESULT",
+    GameState: null,
+    InRunning: false,
+    MarketParameters: null,
+    MarketPeriod: "half=1",
+    PriceNames: ["part1", "draw", "part2"],
+    Prices: prices,
     Pct: pct,
   },
 });
 
-const score = (t, type, homeScore, awayScore, minute, label) => ({
+// A real scores/events record shape (see probe-out/sample-scores.json),
+// re-timed and re-scored for the mock timeline. `Score` is always populated
+// here (unlike some real Action kinds, e.g. kickoff/free_kick) so every frame
+// below survives mapScoreEvent's "no Score → drop" rule. `Participant: 1` +
+// `Participant1IsHome: true` ⇒ the event maps to team "home", which is what
+// the goal frames need to settle the (home) props YES.
+const score = (t, action, statusId, seconds, homeGoals, awayGoals, fixtureId) => ({
   at: t,
-  event: { FixtureId: 0, Ts: Date.now(), minute, type, homeScore, awayScore, label },
+  event: {
+    FixtureId: fixtureId,
+    Participant1IsHome: true,
+    Participant1Id: 1489,
+    Participant2Id: 3099,
+    Action: action,
+    Id: 1000 + t,
+    Ts: Date.now(),
+    Seq: t,
+    StatusId: statusId,
+    Clock: { Running: true, Seconds: seconds },
+    Score: {
+      Participant1: { Total: { Goals: homeGoals } },
+      Participant2: { Total: { Goals: awayGoals } },
+    },
+    Participant: 1,
+  },
 });
 
 // Odds timeline (ms from connection). Windows below assume ?window=8.
 function oddsTimeline(fixtureId) {
   return [
-    odds(1000, "NEXT_GOAL", ["Home", "Away"], [0.31, 0.42], fixtureId), // opens call #1
-    odds(3000, "NEXT_GOAL", ["Home", "Away"], [0.33, 0.40], fixtureId), // deduped (call #1 still open)
-    odds(11000, "NEXT_GOAL", ["Home", "Away"], [0.28, 0.45], fixtureId), // opens call #2 (no goal → NO)
-    odds(21000, "MATCH_ODDS", ["Home", "Draw", "Away"], [0.55, 0.25, 0.2], fixtureId), // opens call #3 (settling…)
-    odds(31000, "NEXT_GOAL", ["Home", "Away"], [0.4, 0.35], fixtureId), // opens call #4 (goal → YES)
+    odds(1000, fixtureId, [3110, 2273, 4193], ["32.154", "43.995", "23.849"], `mock:1-${fixtureId}-stab`), // opens call #1 (goal → YES)
+    odds(3000, fixtureId, [2980, 2350, 4310], ["33.557", "42.553", "23.202"], `mock:2-${fixtureId}-stab`), // deduped (call #1 still open)
+    odds(12000, fixtureId, [2412, 3438, 3396], ["41.459", "29.087", "29.446"], `mock:3-${fixtureId}-stab`), // opens call #2 (no goal → NO)
+    odds(23000, fixtureId, [1725, 2379, 5210], ["57.971", "32.60", "9.83"], `mock:4-${fixtureId}-stab`), // opens call #3 (goal → YES)
   ];
 }
 
-// Scores timeline (ms from connection).
+// Scores timeline (ms from connection). Home goals inside a call's window
+// settle it YES; the gap after call #2 opens (12s → 20s) has no goal, so it
+// settles NO. game_finalised ends the match. Goal Ts is always after the call
+// it settles opened, satisfying onScore's Ts guard.
 function scoresTimeline(fixtureId) {
-  const withFixture = (s) => ({ ...s, event: { ...s.event, FixtureId: fixtureId } });
   return [
-    score(1500, "KICKOFF", 0, 0, 1, "Kick-off"),
-    score(6000, "GOAL", 1, 0, 12, "Álvarez 12'"), // settles call #1 YES
-    score(36000, "GOAL", 2, 0, 60, "Rodrygo 60'"), // settles call #4 YES
-    score(44000, "FULL_TIME", 2, 0, 90, "Full time"),
-  ].map(withFixture);
+    score(5000, "goal", 9, 720, 1, 0, fixtureId), // 12' — home goal, settles call #1 YES
+    score(27000, "goal", 9, 3600, 2, 0, fixtureId), // 60' — home goal, settles call #3 YES
+    score(38000, "game_finalised", 100, 5400, 2, 0, fixtureId), // full time
+  ];
 }
 
 function openSse(res) {
@@ -98,7 +141,7 @@ function playTimeline(res, frames, pick) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  const fixtureId = Number(url.searchParams.get("fixtureId")) || 1042026;
+  const fixtureId = Number(url.searchParams.get("fixtureId")) || DEFAULT_FIXTURE_ID;
 
   if (url.pathname === "/odds") {
     openSse(res);
@@ -116,13 +159,13 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`mock-txline SSE server → http://localhost:${PORT}`);
-  console.log(`  odds:   http://localhost:${PORT}/odds?fixtureId=1042026`);
-  console.log(`  scores: http://localhost:${PORT}/scores?fixtureId=1042026`);
+  console.log(`  odds:   http://localhost:${PORT}/odds?fixtureId=${DEFAULT_FIXTURE_ID}`);
+  console.log(`  scores: http://localhost:${PORT}/scores?fixtureId=${DEFAULT_FIXTURE_ID}`);
   console.log(
     "\nPoint the proxy at it:\n" +
       "  TXLINE_JWT=dev TXLINE_API_TOKEN=dev \\\n" +
       `  TXLINE_ODDS_URL=http://localhost:${PORT}/odds \\\n` +
       `  TXLINE_SCORES_URL=http://localhost:${PORT}/scores npm run dev\n` +
-      "\nthen open http://localhost:3000/room?feed=live&fixtureId=1042026&window=8",
+      `\nthen open http://localhost:3000/room?feed=live&fixtureId=${DEFAULT_FIXTURE_ID}&window=8`,
   );
 });
