@@ -88,6 +88,27 @@ The **same `GameEngine`** runs both paths — the replay ticker and the live fee
 - `initialize_config` → upgrade-authority gate passed ([`3Kzbtgzq…W1bK`](https://explorer.solana.com/tx/3Kzbtgzq8f1EDuaSSUmYMvsUyWYw7XWyz4nChph7zB7NpqCombTL1rew9rnVTNhQ9A2RG7XLEFek8JRDaghhW1bK?cluster=devnet))
 - `settle_call` → **points = 370 computed on-chain** for a YES @ 27% (1,000,000 ÷ 2700) ([`5siJd29e…hXKUE`](https://explorer.solana.com/tx/5siJd29enQjKCm4DxFe4T3us5YjAMYnZXASy6LApwrk5m2ysUZE16fL58h75YiabdRsL2YU6zCR9e54gX96hXKUE?cluster=devnet))
 
+### The receipt, as a page — `/receipt/[address]`
+
+Every `CallReceipt` PDA now has a branded page (not just a raw Explorer link): fetches + decodes the
+account directly (`src/lib/solana/calledit-client.ts` → `fetchReceipt`/`getPlayerReceipts`, no
+database — `getProgramAccounts` + a `memcmp` on `player` is the entire "career history" backend), and
+a dynamic `next/og` image so the link unfurls as a real card in a group chat. Wired in from `CallCard`,
+the "Your receipts"/"Career" list, and the full-time share button. See it live: kick off a match, make
+a call, click "view your CALLED IT card."
+
+**Honest note on what's trustless today vs. what isn't.** The on-chain **timestamp** (`created_at`,
+the block time) is fully trustless — it's exactly what makes a call provable instead of a hindsight
+boast, and it's the thing this whole product is built around. The on-chain **`market_pct`**, however,
+is **app-attested today**: the client reads it off the live TxLINE odds snapshot and passes it into
+`record_call` as a plain argument — nothing on-chain currently checks that number against what TxLINE
+actually quoted at that moment. That's a deliberate, documented scope cut for the hackathon, not an
+oversight: the receipt page surfaces the odds' provenance (TxLINE `Ts`/`MessageId`/StablePrice marker)
+so the claim is visible and inspectable, but verifying it on-chain is the `txoracle` program's job (a
+sibling project's Merkle-root anchoring), not this one's. The natural next step is a CPI/read into
+`txoracle`'s anchored roots at `record_call` time so `market_pct` gets the same trustless guarantee
+`created_at` already has.
+
 ## How it meets the hard constraints
 
 - **TxLINE as a live input** ✅ — odds drive the calls + scoring; scores settle them. The live path is
