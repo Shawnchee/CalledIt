@@ -1,7 +1,7 @@
 # CalledIt — Submission Packet
 
 **Track B · Consumer & Fan Experiences** — TxLINE World Cup Hackathon
-Repo: https://github.com/Shawnchee/CalledIt
+**Live:** https://calledit-chi.vercel.app · **Repo:** https://github.com/Shawnchee/CalledIt
 
 ---
 
@@ -115,19 +115,15 @@ sibling project's Merkle-root anchoring), not this one's. The natural next step 
   fully wired (`/room?feed=live`, odds + scores proxies, status probe) and testable via the mock SSE
   server; the demo defaults to the recorded replay because World-Cup matches end before judging.
 - **Sign up through Solana** ✅ — wallet adapter; calling requires a connected wallet.
-- **Functional deployed product** — builds and runs (`npm run build` clean); deploy steps below.
+- **Functional deployed product** ✅ — live at **https://calledit-chi.vercel.app** (Vercel, production; `npm run build` clean).
 - **Demo-video-friendly** ✅ — replay + simulated crew; solo-vs-market is complete on its own.
 
-## Deploy (one step — needs your Vercel account)
+## Deployment
 
-The app is zero-config for Vercel (Next.js auto-detected; no env vars required for the demo —
-Solana uses public devnet RPC and the program ID is baked in).
-
-**Option A — Vercel dashboard (easiest):** go to https://vercel.com/new → Import
-`Shawnchee/CalledIt` → Deploy. (Optional env: `NEXT_PUBLIC_SOLANA_RPC`, and `TXLINE_JWT` /
-`TXLINE_API_TOKEN` to enable the live feed.)
-
-**Option B — CLI:** `npm i -g vercel && vercel login && vercel --prod`
+**Live (production):** https://calledit-chi.vercel.app — deployed on Vercel from `main`, auto-redeploys
+on push. Zero env vars required for the demo path (Solana uses public devnet RPC; program ID is baked
+in). Optional env to light up extras: `NEXT_PUBLIC_SOLANA_RPC` (dedicated devnet RPC), and `TXLINE_JWT`
+/ `TXLINE_API_TOKEN` (server-side only) to enable the live feed.
 
 ## Demo video script (≤5 min)
 

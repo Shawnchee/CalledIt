@@ -16,9 +16,9 @@ const description =
   "A live World Cup play-along game: make calls against the live betting market, prove them on-chain, and settle the group chat. Powered by TxLINE + Solana.";
 
 export const metadata: Metadata = {
-  // TODO: set NEXT_PUBLIC_SITE_URL to the production Vercel URL once deployed (FIX-02).
-  // Falls back to localhost so local dev/build never breaks on a missing env var.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  // Production URL (override with NEXT_PUBLIC_SITE_URL for previews/local).
+  // OG + Twitter card image URLs resolve against this base.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://calledit-chi.vercel.app"),
   title,
   description,
   openGraph: {

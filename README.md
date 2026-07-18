@@ -1,7 +1,7 @@
 # CalledIt ⚽️ — *call it before the market does. prove it. settle the group chat.*
 
 > **Track B · Consumer & Fan Experiences** — TxLINE World Cup Hackathon
-> **Status:** concept **LOCKED**, MVP in build. See [`TRACK.md`](./TRACK.md) for the brief.
+> **Live:** **[calledit-chi.vercel.app](https://calledit-chi.vercel.app)** · **Status:** shipped & deployed (devnet). See [`TRACK.md`](./TRACK.md) for the brief.
 
 **One-liner:** a live, play-along game where you call what's about to happen in a World Cup
 match **against the live betting market** — your calls are timestamped on-chain *before* the
