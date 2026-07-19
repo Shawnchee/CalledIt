@@ -62,32 +62,22 @@ https://github.com/Shawnchee/CalledIt/blob/main/technical_documentation.md
 
 ### Share your team's experience using the TxLINE API (see §10 for the full version)
 ```
-The odds SSE is a great primitive — InRunning + Pct[] map almost 1:1 onto a "call the next
-N minutes vs the market" mechanic, and we built the entire scoring engine on Pct[]. The
-best affordance was Last-Event-ID resume, which made SSE reconnection trivial. Biggest
-friction: the ~60s free/World-Cup sampling cadence isn't surfaced loudly enough in the
-quickstart — it's the single most architecture-shaping fact and it (correctly) killed our
-first sub-second "belief-meter" idea, so builders should learn it before designing the
-interaction model, not after. We also had to infer payload shapes (PriceNames/Prices/Pct
-alignment, SuperOddsType values) and model the scores/events schema from the worldcup docs;
-a couple of real example frames per market type, plus a documented scores schema next to the
-odds one and clarity on the two auth tokens (Bearer JWT vs X-Api-Token — which is long-lived
-vs rotating, and their TTLs), would each save every builder an afternoon.
+The odds SSE is a great primitive — InRunning + Pct[] mapped almost 1:1 onto our "call the
+next N minutes vs the market" mechanic, and Last-Event-ID resume made SSE reconnection
+trivial. The main friction was that the ~60s free-tier sampling cadence isn't surfaced
+loudly in the quickstart — it's the most architecture-shaping fact and (correctly) killed
+our first sub-second idea. We also had to infer the payload shapes and model the scores
+schema ourselves, so real example frames and a documented scores schema would save every
+builder an afternoon.
 ```
 
 ### Anything Else?
 ```
-- Trust model is documented honestly (§6): the on-chain TIMESTAMP is fully trustless (this
-  is the anti-hindsight proof and the whole point of the product); the on-chain market_pct
-  is app-attested today, a deliberate documented scope cut. The natural next step is a
-  CPI/read into a sibling txoracle program's Merkle-anchored roots so market_pct gets the
-  same trustless guarantee created_at already has.
-- The live path is fully wired but the demo defaults to a deterministic recorded replay
-  because World Cup matches end before judging. Both paths run through the identical
-  openProp()/resolveProp() seam, so "live" is not a separate untested code path. Drop in
-  TXLINE_JWT + TXLINE_API_TOKEN and open /room?feed=live to switch — one step (§7).
-- The 7 named threat-model invariants (INV-1..7) are executable tests (cargo test), not
-  just prose. All three program instructions are verified on devnet with explorer links (§5).
+The demo defaults to a deterministic recorded replay (World Cup matches end before judging)
+but runs the identical engine seam as the fully-wired live feed — drop in TXLINE_JWT /
+TXLINE_API_TOKEN, open /room?feed=live, and it's real; the trust model is documented
+honestly (trustless on-chain timestamp, app-attested market %) and all three program
+instructions are verified on devnet.
 ```
 
 ---
