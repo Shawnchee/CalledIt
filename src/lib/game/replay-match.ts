@@ -56,7 +56,7 @@ export const MATCH: MatchInfo = {
   fixtureId: 1042026,
   competition: "World Cup 2026 · Final",
   home: { name: "Argentina", short: "ARG", flag: "🇦🇷", color: "#6CACE4" },
-  away: { name: "Brazil", short: "BRA", flag: "🇧🇷", color: "#F7D417" },
+  away: { name: "Spain", short: "ESP", flag: "🇪🇸", color: "#C60B1E" },
 };
 
 export const BOTS: BotPersona[] = [
@@ -77,12 +77,12 @@ export const SCRIPT: MatchScript = {
       windowSec: 12,
       resolveAt: 24,
       minute: 12,
-      label: "Brazil to win a corner in the next 5 minutes?",
-      detail: "Brazil building early pressure down the right.",
+      label: "Spain to win a corner in the next 5 minutes?",
+      detail: "Spain building early pressure down the right.",
       superOddsType: "NEXT_CORNER",
       yesPct: 0.63,
       outcome: "YES",
-      resolveLabel: "🚩 Corner — Brazil, 15'",
+      resolveLabel: "🚩 Corner — Spain, 15'",
       botCalls: [
         { botId: "max", side: "YES", at: 9 },
         { botId: "priya", side: "YES", at: 11 },
@@ -97,7 +97,7 @@ export const SCRIPT: MatchScript = {
       resolveAt: 50,
       minute: 24,
       label: "Argentina to score in the next 10 minutes?",
-      detail: "Market doubts it — Brazil have been the better side.",
+      detail: "Market doubts it — Spain have been the better side.",
       superOddsType: "NEXT_GOAL",
       yesPct: 0.27,
       outcome: "YES",
@@ -135,12 +135,12 @@ export const SCRIPT: MatchScript = {
       windowSec: 14,
       resolveAt: 106,
       minute: 57,
-      label: "Brazil to equalise this half?",
-      detail: "Brazil throwing bodies forward after the restart.",
+      label: "Spain to equalise this half?",
+      detail: "Spain throwing bodies forward after the restart.",
       superOddsType: "NEXT_GOAL",
       yesPct: 0.43,
       outcome: "YES",
-      resolveLabel: "⚽ GOAL — Rodrygo, 61' · ARG 1-1 BRA",
+      resolveLabel: "⚽ GOAL — Yamal, 61' · ARG 1-1 ESP",
       scoreAfter: { home: 1, away: 1 },
       botCalls: [
         { botId: "max", side: "YES", at: 86 },
@@ -179,7 +179,7 @@ export const SCRIPT: MatchScript = {
       superOddsType: "MATCH_ODDS",
       yesPct: 0.52,
       outcome: "NO",
-      resolveLabel: "⚽ Brazil win it — Vinícius, 90'! ARG 1-2 BRA",
+      resolveLabel: "⚽ Spain win it — Oyarzabal, 90'! ARG 1-2 ESP",
       scoreAfter: { home: 1, away: 2 },
       botCalls: [
         // even the sharp gets the ending wrong — so a good player can take #1
